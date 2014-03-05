@@ -265,6 +265,8 @@ public class XTraceContext {
             return null;
         if (!isValid())
             return null;
+        if (!loggingEnabled())
+            return XTraceContext.getThreadContext().iterator().next();
 
         Collection<XTraceMetadata> metadatas = contexts.get();
         if (metadatas.size() == 1) {
@@ -311,6 +313,8 @@ public class XTraceContext {
             return;
         if (!isValid())
             return;
+        if (!loggingEnabled())
+            return;
         
         // if (args.length % 2 != 0) {
         // throw new IllegalArgumentException(
@@ -351,6 +355,8 @@ public class XTraceContext {
         if (!isValid())
             return;
         if (!XTraceLogLevel.isOn(msgclass))
+            return;
+        if (!loggingEnabled())
             return;
 
         if (args.length % 2 != 0) {
@@ -410,6 +416,8 @@ public class XTraceContext {
             return null;
         if (!isValid())
             return null;
+        if (!loggingEnabled())
+            return null;
 
         XTraceMetadataCollection oldContext = contexts.get();
         int opIdLength = defaultOpIdLength;
@@ -430,6 +438,14 @@ public class XTraceContext {
             setThreadContext(event.getNewMetadata());
         }
         return event;
+    }
+    
+    /**
+     * Is logging of X-Trace events enabled in the config?
+     * @return
+     */
+    public static boolean loggingEnabled() {
+        return XTraceConfiguration.active.logging;
     }
 
     /**
@@ -610,6 +626,8 @@ public class XTraceContext {
             setThreadContext(new XTraceMetadata(taskId, 0L));
             msgclass = XTraceLogLevel.ALWAYS; // always log a proper start event
         }
+        if (!loggingEnabled())
+            return;
         XTraceEvent event = createEvent(msgclass, agent, title);
         if (msgclass==XTraceLogLevel.ALWAYS) {
             event.put("Operation", "starttrace");

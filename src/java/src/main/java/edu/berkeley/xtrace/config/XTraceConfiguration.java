@@ -78,6 +78,9 @@ public class XTraceConfiguration {
   
   /** Turns on or off causality.  Causality off is more efficient.  Default on. */
   public boolean causality = true;
+
+  /** Turns on or off actual logging of events */
+  public boolean logging = true;
   
   /**
    * Parses the X-Trace configuration in the specified file, and returns an XTraceConfiguration
