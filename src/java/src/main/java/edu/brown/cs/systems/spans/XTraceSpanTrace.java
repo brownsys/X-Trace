@@ -173,4 +173,9 @@ public class XTraceSpanTrace {
                                toStop.getSpan());
         setCurrentSpanInOptions(toStop.getSavedSpan());
     }
+
+    public static Runnable wrap(Runnable runnable) {
+        // TODO: check if tracing here and do nothing if not
+        return new TraceRunnable(runnable);
+    }
 }
