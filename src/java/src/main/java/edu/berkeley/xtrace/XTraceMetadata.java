@@ -472,7 +472,7 @@ public final class XTraceMetadata {
 	 * For reusing options when propagating metadata
 	 * @param options
 	 */
-	void setOptions(OptionField[] options) {
+	public void setOptions(OptionField[] options) {
 	  this.options = options;
 	  this.numOptions = options==null ? 0 : options.length;
 	}
