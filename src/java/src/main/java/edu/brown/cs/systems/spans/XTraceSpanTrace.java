@@ -79,12 +79,13 @@ public class XTraceSpanTrace {
         event.put(START_SPAN_FIELDKEY, START_SPAN_STRING);
         event.put(PARENT_SPAN_FIELDKEY, curSpanString);
         event.sendReport();
+        xmd = getFirstCurrentXTraceMetadata();
         String newSpanString = xmd.getOpIdString();
-        setCurrentSpanInOptions(newSpanString);
+        System.out.println("start SPAN set current span: " + setCurrentSpanInOptions(newSpanString) + ". new: " + newSpanString + ". OLD: " + curSpanString);
         return new XTraceSpan(newSpanString, curSpanString);
     }
 
-    // should only be called once
+    // TODO: currently must be called exactly once. fix this.
     public static XTraceSpan startTrace(String agent, String description) {
         if (!XTraceConfiguration.ENABLED) {
             // TODO: have a null xtracespan to return here?
@@ -113,12 +114,14 @@ public class XTraceSpanTrace {
         return new XTraceSpan(curOpId, ROOT_SPAN_STRING);
     }
 
-
+    // TODO: add boolean flag to throw exception if more than one
+    // metadata is current for assertion checking.
     private static XTraceMetadata getFirstCurrentXTraceMetadata() {
         Collection<XTraceMetadata> xmdCol = XTraceContext.getThreadContext(null);
 
         if (xmdCol.size() != 1) {
             LOG.warn("Multiple XTraceMetadata's.");
+            System.out.println("MULTIPLE METADATAS");
         }
 
         return xmdCol.iterator().next();
@@ -148,21 +151,46 @@ public class XTraceSpanTrace {
         }
 
         if (foundIndex == -1) {
+            System.out.println("DID NOT FIND. LENGTH: " + curOptions.length);
             return false;
         }
 
         OptionField[] newOptions = new OptionField[curOptions.length - 1];
-        System.arraycopy(curOptions, 0, newOptions, 0, foundIndex);
-        System.arraycopy(curOptions, foundIndex + 1, newOptions, foundIndex, newOptions.length - foundIndex - 1);
-        xmd.setOptions(newOptions);
 
+        if (newOptions.length > 0) {
+            System.arraycopy(curOptions, 0, newOptions, 0, foundIndex);
+            System.arraycopy(curOptions, foundIndex + 1,
+                             newOptions, foundIndex,
+                             newOptions.length - foundIndex - 1);
+        }
+
+        // TODO: remove this (test)
+        System.out.println("---------------------------------------------------");
+        System.out.println("CUR OPTIONS:\n");
+        for (OptionField of : curOptions) {
+            if (of != null) {
+                System.out.println("OPTION FIELD: " + new String(of.getPayload()));
+            } else {
+                System.out.println("OPTION FIELD NULL");
+            }
+        }
+        System.out.println("NEW OPTIONS:\n");
+        for (OptionField of : newOptions) {
+            System.out.println("OPTION FIELD: " + of);
+        }
+        System.out.println("---------------------------------------------------");
+
+        xmd.setOptions(newOptions);
         return true;
     }
 
     private static boolean setCurrentSpanInOptions(String opId) {
         XTraceMetadata xmd = getFirstCurrentXTraceMetadata();
+        System.out.println("size before removing: " + xmd.getNumOptions());
         boolean toReturn = removeCurrentSpanFromOptions();
+        System.out.println("size after removing and before adding new: " + xmd.getNumOptions());
         xmd.addOption(createOptionFieldForOpId(opId));
+        System.out.println("size after adding new: " + xmd.getNumOptions());
         return toReturn;
     }
 
@@ -171,7 +199,7 @@ public class XTraceSpanTrace {
                                NO_DESC_GIVEN,
                                END_SPAN_FIELDKEY,
                                toStop.getSpan());
-        setCurrentSpanInOptions(toStop.getSavedSpan());
+        System.out.println("stopSPAN CURRENT: " + setCurrentSpanInOptions(toStop.getSavedSpan()));
     }
 
     public static Runnable wrap(Runnable runnable) {
