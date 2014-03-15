@@ -66,7 +66,6 @@ import org.mortbay.servlet.CGI;
 import edu.berkeley.xtrace.TaskID;
 import edu.berkeley.xtrace.XTraceException;
 import edu.berkeley.xtrace.reporting.Report;
-import edu.brown.cs.systems.pubsub.PubSubServer;
 
 /**
  * @author George Porter
@@ -93,6 +92,8 @@ public final class XTraceServer {
 
 	// Default number of results to show per page for web UI
 	private static final int PAGE_LENGTH = 25;
+	
+	private static edu.brown.cs.systems.pubsub.Server pubsubserver;
 
 	public static void main(String[] args) {
 
@@ -109,7 +110,8 @@ public final class XTraceServer {
 		setupReportStore();
 		setupBackplane();
 		setupWebInterface();
-		PubSubServer.initialize();
+		pubsubserver = new edu.brown.cs.systems.pubsub.Server();
+		pubsubserver.start();
 	}
 
 	private static void setupReportSources() {
