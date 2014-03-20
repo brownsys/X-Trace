@@ -98,19 +98,31 @@ public class XTrace {
   }
   
   public boolean hasTaskID() {
-    return TRACE.peek().hasTaskID();
+    Context ctx = TRACE.peek();
+    return ctx!=null && ctx.hasTaskID();
   }
   
-  public long getTaskID() {
-    return TRACE.peek().getTaskID();
+  /**
+   * Returns the task ID if one is set, otherwise null
+   * @return
+   */
+  public Long getTaskID() {
+    Context ctx = TRACE.peek();
+    return ctx==null ? null : ctx.hasTaskID() ? ctx.getTaskID() : null;
   }
   
   public boolean hasTenantClass() {
-    return TRACE.peek().hasTenantClass();
+    Context ctx = TRACE.peek();
+    return ctx!=null && ctx.hasTenantClass();
   }
   
-  public int getTenantClass() {
-    return TRACE.peek().getTenantClass();
+  /**
+   * Returns the tenant class if one is set, otherwise null
+   * @return tenant class if metadata exists and has a tenant class, null otherwise
+   */
+  public Integer getTenantClass() {
+    Context ctx = TRACE.peek();
+    return ctx==null ? null : ctx.hasTenantClass() ? ctx.getTenantClass() : null;
   }
   
   
