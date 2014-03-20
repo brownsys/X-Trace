@@ -97,6 +97,23 @@ public class XTrace {
     return LOG.canLog();
   }
   
+  public boolean hasTaskID() {
+    return TRACE.peek().hasTaskID();
+  }
+  
+  public long getTaskID() {
+    return TRACE.peek().getTaskID();
+  }
+  
+  public boolean hasTenantClass() {
+    return TRACE.peek().hasTenantClass();
+  }
+  
+  public int getTenantClass() {
+    return TRACE.peek().getTenantClass();
+  }
+  
+  
   /**
    * Starts a new trace, creating new metadata only if necessary.
    * If metadata already exists, this method does nothing

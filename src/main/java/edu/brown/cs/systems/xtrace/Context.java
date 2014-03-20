@@ -24,6 +24,22 @@ public class Context {
     return new Context(builder.clone());
   }
   
+  public boolean hasTaskID() {
+    return builder.hasTaskID();
+  }
+  
+  public long getTaskID() {
+    return builder.getTaskID();
+  }
+  
+  public boolean hasTenantClass() {
+    return builder.hasTenantClass();
+  }
+  
+  public int getTenantClass() {
+    return builder.getTenantClass();
+  }
+  
   /**
    * Creates and returns a new Context.  The context is not set anywhere; call a set(Context)
    * method to set it to the active context.
