@@ -26,7 +26,7 @@ public class XTrace {
    * Null metadata is allowed
    * @param metadata
    */
-  public void set(Context metadata) {
+  public static void set(Context metadata) {
     TRACE.set(metadata);
   }
   
@@ -41,7 +41,7 @@ public class XTrace {
    *   - the tenant class will be one of the tenant classes of the parents
    * @param metadata
    */
-  public void join(Context metadata) {
+  public static void join(Context metadata) {
     TRACE.join(metadata);
   }
   
@@ -56,7 +56,7 @@ public class XTrace {
    *   - the tenant class will be one of the tenant classes of the parents
    * @param metadata
    */
-  public void join(byte[] bytes) {
+  public static void join(byte[] bytes) {
     TRACE.join(bytes);
   }
   
@@ -66,7 +66,7 @@ public class XTrace {
    * Get the current X-Trace metadata for this thread.
    * @return An X-Trace context containing the thread's current metadata
    */
-  public Context get() {
+  public static Context get() {
     return TRACE.get();
   }
   
@@ -75,7 +75,7 @@ public class XTrace {
    * @return the byte representation of the current X-Trace metadata,
    * or null if no metadata is set
    */
-  public byte[] bytes() {
+  public static byte[] bytes() {
     return TRACE.bytes();
   }
   
@@ -93,15 +93,60 @@ public class XTrace {
    * Returns true if we're able to send log messages.
    * @return
    */
-  public boolean canLog() {
+  public static boolean canLog() {
     return LOG.canLog();
   }
   
-  public void logEvent(String agent, String label, Object... fields) {
-    LOG.logEvent(agent, label, fields);
+  /**
+   * Starts a new trace, creating new metadata only if necessary.
+   * If metadata already exists, this method does nothing
+   * This method will not propagate a tenant class
+   * It is recommended to log an event after starting a trace; this method only starts the metadata propagation
+   * @param trackCausality should we track causality?
+   */
+  public static void startTrace(boolean trackCausality) {
+    if (TRACE.exists())
+      return;
+    
+    Context ctx = Context.create(Logger.random.nextLong(), null, trackCausality ? 0L : null);
+    TRACE.set(ctx);
   }
   
-  public void logEvent(Class<?> agent, String label, Object... fields) {
+  /**
+   * Starts a new trace, creating new metadata only if necessary.
+   * If metadata already exists, this method does nothing
+   * It is recommended to log an event after starting a trace; this method only starts the metadata propagation
+   * @param tenantclass the class of the tenant to propagate
+   * @param trackTask should we propagate a task id?
+   * @param trackCausality should we propagate event ids?
+   */
+  public static void startTenantTrace(int tenantclass, boolean trackTask, boolean trackCausality) {
+    if (TRACE.exists())
+      return;
+    
+    Context ctx = Context.create(trackTask ? Logger.random.nextLong() : null, tenantclass, (trackCausality && trackTask) ? 0L : null);
+    TRACE.set(ctx);
+  }
+  
+  /**
+   * If we are currently propagating metadata for an X-Trace task,
+   * this method logs an event for the task
+   * @param agent
+   * @param label
+   * @param fields
+   */
+  public static void logEvent(String agent, String label, Object... fields) {
+    LOG.logEvent(agent, label, fields);
+  }
+
+  /**
+   * If we are currently propagating metadata for an X-Trace task,
+   * this method logs an event for the task
+   * @param agent
+   * @param label
+   * @param fields
+   */
+  public static void logEvent(Class<?> agent, String label, Object... fields) {
     LOG.logEvent(agent, label, fields);
   }
   

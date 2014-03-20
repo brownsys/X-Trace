@@ -16,8 +16,8 @@ import edu.brown.cs.systems.xtrace.Metadata.XTraceMetadata.Builder;
  */
 public class Trace {
   
-  private ThreadLocal<Context> context = new ThreadLocal<Context>(); 
-
+  private ThreadLocal<Context> context = new ThreadLocal<Context>();
+  
   /**
    * Set this thread's X-Trace metadata to the provided bytes
    * If the bytes are invalid, the metadata will be set to null
