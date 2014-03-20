@@ -71,7 +71,7 @@ public class XTraceServer {
 	  
 	  // Start the report sources
 	  tcpsource = new TcpReportSource(Settings.TCP_PORT, data, metadata);
-	  pubsubsource = new PubSubSource(Settings.PUBSUB_TOPIC, Settings.PUBSUB_SUBSCRIBE_PORT, data, metadata);
+	  pubsubsource = new PubSubSource(Settings.SERVER_HOSTNAME, Settings.PUBSUB_SUBSCRIBE_PORT, data, metadata);
 	  
 	  Runtime.getRuntime().addShutdownHook(new Thread() {
 	    @Override
@@ -101,6 +101,7 @@ public class XTraceServer {
         } catch (Exception e) {
           LOG.warn("Unable to shutdown pubsub server", e);
         }
+        LOG.info("XTraceServer shut down");
 	    }
 	  });
 	}
@@ -114,11 +115,10 @@ public class XTraceServer {
 	}
 	
 	public void start() throws Exception {
-    // Start everything
+    // Start anything that needs to be started
     webserver.start();
     pubsubserver.start();
     tcpsource.start();
-    pubsubsource.start();
 	}
 	
 	

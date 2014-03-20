@@ -1,21 +1,41 @@
 package edu.brown.cs.systems.xtrace.server.impl;
 
+import org.apache.log4j.Logger;
+
+import edu.brown.cs.systems.pubsub.Subscriber;
+import edu.brown.cs.systems.pubsub.Subscriber.Callback;
+import edu.brown.cs.systems.xtrace.Reporting.XTraceReport3;
+import edu.brown.cs.systems.xtrace.Settings;
 import edu.brown.cs.systems.xtrace.server.api.DataStore;
 import edu.brown.cs.systems.xtrace.server.api.MetadataStore;
 
-public class PubSubSource extends Thread {
+public class PubSubSource extends Callback<XTraceReport3> {
+  private static final Logger LOG = Logger.getLogger(PubSubSource.class);
 
-  public PubSubSource(String pubsubTopic, int pubsubSubscribePort, DataStore data, MetadataStore metadata) {
-    // TODO Auto-generated constructor stub
-  }
+  private final Subscriber subscriber;
+  private final MetadataStore metadata;
+  private final DataStore data;
 
-  @Override
-  public void run() {
-    
+  public PubSubSource(String serverHostname, int pubsubSubscribePort, DataStore data, MetadataStore metadata) {
+    subscriber = new Subscriber(serverHostname, pubsubSubscribePort);
+    subscriber.subscribe(Settings.PUBSUB_TOPIC, this);
+    this.data = data;
+    this.metadata = metadata;
   }
 
   public void shutdown() {
-    // TODO Auto-generated method stub
-    
+    subscriber.close();
+    LOG.info("PubSub subscriber closed");
+  }
+
+  @Override
+  protected void OnMessage(XTraceReport3 msg) {
+    try {
+      Report3 report = new Report3(msg);
+      data.reportReceived(report);
+      metadata.reportReceived(report);
+    } catch (Exception e) {
+      LOG.warn("PubSub exception receiving report\n" + msg, e);
+    }
   }
 }

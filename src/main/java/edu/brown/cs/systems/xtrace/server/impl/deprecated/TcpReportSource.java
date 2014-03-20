@@ -67,7 +67,8 @@ public class TcpReportSource extends Thread {
         new TcpClientHandler(sock).start();
       }
     } catch (IOException e) {
-      LOG.warn("IOException while accepting a TCP client", e);
+      if (alive)
+        LOG.warn("IOException while accepting a TCP client", e);
     } finally {
       shutdown();
     }

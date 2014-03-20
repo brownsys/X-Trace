@@ -105,6 +105,8 @@ public class DerbyMetadataStore implements MetadataStore {
     } catch (SQLException e) {
       if (!e.getSQLState().equals("08006")) {
         LOG.warn("Unable to shutdown embedded database", e);
+      } else {
+        LOG.info("Derby Metadata store successfully shut down");
       }
     }
   }
