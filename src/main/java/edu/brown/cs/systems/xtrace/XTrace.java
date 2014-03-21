@@ -16,8 +16,8 @@ import edu.brown.cs.systems.xtrace.Metadata.XTraceMetadataOrBuilder;
  */
 public class XTrace {
 
-  private static final Trace METADATA = new Trace();
-  private static final Reporter REPORTER = new PubSubReporter(METADATA);
+  static final Trace METADATA = new Trace();
+  static final Reporter REPORTER = new PubSubReporter(METADATA);
   
   public interface Logger {
     public boolean valid();
