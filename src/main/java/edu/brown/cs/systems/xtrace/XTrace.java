@@ -21,7 +21,7 @@ public class XTrace {
   
   public interface Logger {
     public boolean valid();
-    public void logEvent(String message, Object... labels);    
+    public void log(String message, Object... labels);    
   }
   
   /** If logging is turned off for an agent, then they're given the null logger which does nothing */
@@ -29,7 +29,7 @@ public class XTrace {
     public boolean valid() {
       return false;
     }
-    public void logEvent(String message, Object... labels) {
+    public void log(String message, Object... labels) {
     }
   };
   
@@ -41,7 +41,7 @@ public class XTrace {
     public boolean valid() {
       return REPORTER.valid();
     }
-    public void logEvent(String message, Object... labels) {
+    public void log(String message, Object... labels) {
       REPORTER.sendReport(agent, message, labels);
     }
   }
