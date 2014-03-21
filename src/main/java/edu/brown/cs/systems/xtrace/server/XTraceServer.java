@@ -30,7 +30,7 @@ package edu.brown.cs.systems.xtrace.server;
 import org.apache.log4j.Logger;
 
 import edu.brown.cs.systems.pubsub.Server;
-import edu.brown.cs.systems.xtrace.Settings;
+import edu.brown.cs.systems.xtrace.XTraceSettings;
 import edu.brown.cs.systems.xtrace.server.api.DataStore;
 import edu.brown.cs.systems.xtrace.server.api.MetadataStore;
 import edu.brown.cs.systems.xtrace.server.impl.DerbyMetadataStore;
@@ -63,15 +63,15 @@ public class XTraceServer {
 	private XTraceServer() throws Exception {
 	  // Create the data stores
 	  metadata = DerbyMetadataStore.getInstance();
-	  data = new FileTreeDataStore(Settings.DATASTORE_DIRECTORY + "/reports/");
+	  data = new FileTreeDataStore(XTraceSettings.DATASTORE_DIRECTORY + "/reports/");
 	  
 	  // Create the static servers
-	  webserver = new WebServer(Settings.WEBUI_PORT, data, metadata);
-	  pubsubserver = new Server(Settings.SERVER_BIND_HOSTNAME, Settings.PUBSUB_SUBSCRIBE_PORT, Settings.PUBSUB_PUBLISH_PORT);
+	  webserver = new WebServer(XTraceSettings.WEBUI_PORT, data, metadata);
+	  pubsubserver = new Server(XTraceSettings.SERVER_BIND_HOSTNAME, XTraceSettings.PUBSUB_SUBSCRIBE_PORT, XTraceSettings.PUBSUB_PUBLISH_PORT);
 	  
 	  // Start the report sources
-	  tcpsource = new TcpReportSource(Settings.TCP_PORT, data, metadata);
-	  pubsubsource = new PubSubSource(Settings.SERVER_HOSTNAME, Settings.PUBSUB_SUBSCRIBE_PORT, data, metadata);
+	  tcpsource = new TcpReportSource(XTraceSettings.TCP_PORT, data, metadata);
+	  pubsubsource = new PubSubSource(XTraceSettings.SERVER_HOSTNAME, XTraceSettings.PUBSUB_SUBSCRIBE_PORT, data, metadata);
 	  
 	  Runtime.getRuntime().addShutdownHook(new Thread() {
 	    @Override

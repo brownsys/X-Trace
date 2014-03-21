@@ -21,7 +21,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
 
-import edu.brown.cs.systems.xtrace.Settings;
+import edu.brown.cs.systems.xtrace.XTraceSettings;
 import edu.brown.cs.systems.xtrace.server.api.DataStore;
 import edu.brown.cs.systems.xtrace.server.api.Report;
 import edu.brown.cs.systems.xtrace.server.impl.ServerReporting.ReportOnDisk;
@@ -74,13 +74,13 @@ public class FileTreeDataStore implements DataStore {
       
       // Create the task file and a writer to it
       File taskfile = new File(l3, taskId + ".txt");
-      return new BufferedOutputStream(new FileOutputStream(taskfile), Settings.DATASTORE_BUFFER_SIZE);
+      return new BufferedOutputStream(new FileOutputStream(taskfile), XTraceSettings.DATASTORE_BUFFER_SIZE);
     }
   }
 
   private final LoadingCache<String, OutputStream> writercache = 
-      CacheBuilder.newBuilder().maximumSize(Settings.DATASTORE_CACHE_SIZE)
-                               .expireAfterWrite(Settings.DATASTORE_CACHE_TIMEOUT, TimeUnit.MILLISECONDS)
+      CacheBuilder.newBuilder().maximumSize(XTraceSettings.DATASTORE_CACHE_SIZE)
+                               .expireAfterWrite(XTraceSettings.DATASTORE_CACHE_TIMEOUT, TimeUnit.MILLISECONDS)
                                .removalListener(new FileCloser())
                                .build(new FileOpener());
   

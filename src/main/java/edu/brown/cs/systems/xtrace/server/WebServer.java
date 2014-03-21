@@ -28,7 +28,7 @@ import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.log.Log;
 import org.mortbay.servlet.CGI;
 
-import edu.brown.cs.systems.xtrace.Settings;
+import edu.brown.cs.systems.xtrace.XTraceSettings;
 import edu.brown.cs.systems.xtrace.server.api.DataStore;
 import edu.brown.cs.systems.xtrace.server.api.MetadataStore;
 import edu.brown.cs.systems.xtrace.server.api.Report;
@@ -55,7 +55,7 @@ public class WebServer extends Server {
     try {
       Velocity.setProperty(Velocity.RUNTIME_LOG_LOGSYSTEM_CLASS, "org.apache.velocity.runtime.log.Log4JLogChute");
       Velocity.setProperty("runtime.log.logsystem.log4j.logger", "edu.berkeley.xtrace.server.XTraceServer");
-      Velocity.setProperty("file.resource.loader.path", Settings.WEBUI_SRC_DIR + "/templates");
+      Velocity.setProperty("file.resource.loader.path", XTraceSettings.WEBUI_SRC_DIR + "/templates");
       Velocity.setProperty("file.resource.loader.cache", "true");
       Velocity.init();
     } catch (Exception e) {
@@ -67,7 +67,7 @@ public class WebServer extends Server {
 
     // Create a CGI servlet for scripts in webui/cgi-bin
     ServletHolder cgiHolder = new ServletHolder(new CGI());
-    cgiHolder.setInitParameter("cgibinResourceBase", Settings.WEBUI_SRC_DIR + "/cgi-bin");
+    cgiHolder.setInitParameter("cgibinResourceBase", XTraceSettings.WEBUI_SRC_DIR + "/cgi-bin");
 
     // Pass any special PATH setting on to the execution environment
     if (System.getenv("PATH") != null)
@@ -89,7 +89,7 @@ public class WebServer extends Server {
     context.addServlet(new ServletHolder(new GetTagsForTaskServlet()), "/interactive/tags/*");
     context.addServlet(new ServletHolder(new GetTasksForTags()), "/interactive/taggedwith/*");
 
-    context.setResourceBase(Settings.WEBUI_SRC_DIR + "/html");
+    context.setResourceBase(XTraceSettings.WEBUI_SRC_DIR + "/html");
     context.addServlet(new ServletHolder(new IndexServlet()), "/");
   }
 

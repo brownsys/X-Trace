@@ -1,182 +1,245 @@
 package edu.brown.cs.systems.xtrace;
 
-import edu.brown.cs.systems.xtrace.impl.PubSubLogger;
+import edu.brown.cs.systems.xtrace.Metadata.XTraceMetadataOrBuilder;
 
 /**
- * The front door to X-Trace v3.  Has static instances of Log and Trace to allow
- * direct static invocation, allowing same kind of API interaction as previous versions of X-Trace
+ * The front door to X-Trace v3.
+ * 
+ * Metadata propagation is provided as static methods on the X-Trace class
+ * 
+ * Logging is provided as instance methods on instances returned by XTrace.getLogger
+ * 
+ * Provides static methods for X-Trace metadata propagation.  
+ * Also provides static methods to return logger instances for logging against named classes.
+ * 
  * @author Jonathan Mace
  */
 public class XTrace {
-  
-  private static Trace TRACE = new Trace();
-  private static Logger LOG = new PubSubLogger(TRACE);
 
-  /**
-   * Set this thread's X-Trace metadata to the provided bytes
-   * If the bytes are invalid, the metadata will be set to null
-   * @param m byte representation of the metadata to set
-   */
-  public static void set(byte[] m) {
-    TRACE.set(m);
+  private static final Trace METADATA = new Trace();
+  private static final Reporter REPORTER = new PubSubReporter(METADATA);
+  
+  public interface Logger {
+    public boolean valid();
+    public void logEvent(String message, Object... labels);    
+  }
+  
+  /** If logging is turned off for an agent, then they're given the null logger which does nothing */
+  static Logger NULL_LOGGER = new Logger() {
+    public boolean valid() {
+      return false;
+    }
+    public void logEvent(String message, Object... labels) {
+    }
+  };
+  
+  static class LoggerImpl implements Logger {
+    private final String agent;
+    public LoggerImpl(String agent) {
+      this.agent = agent;
+    }
+    public boolean valid() {
+      return REPORTER.valid();
+    }
+    public void logEvent(String message, Object... labels) {
+      REPORTER.sendReport(agent, message, labels);
+    }
   }
   
   /**
-   * Set this thread's X-Trace metadata to the provided metadata.
-   * Null metadata is allowed
+   * Returns the default logger
+   * @return
+   */
+  public static Logger getLogger() {
+    if (XTraceSettings.REPORTING_ENABLED_DEFAULT)
+      return new LoggerImpl("default");
+    else
+      return NULL_LOGGER;
+  }
+  
+  public static Logger getLogger(String agent) {
+    if (agent==null)
+      return NULL_LOGGER;
+    else if (XTraceSettings.REPORTING_ENABLED_DEFAULT && !XTraceSettings.REPORTING_DISABLED.contains(agent))
+      return new LoggerImpl(agent);
+    else if (XTraceSettings.REPORTING_ENABLED.contains(agent))
+      return new LoggerImpl(agent);
+    else
+      return NULL_LOGGER;
+  }
+  
+  /**
+   * Shorthand for getLogger(agent.getName())
+   * @param agent The name of the agent will be used as the name of the logger to retrieve
+   * @return an xtrace event logger that can be used to log events
+   */
+  public static Logger getLogger(Class<?> agent) {
+     if (agent==null)
+       return NULL_LOGGER;
+     else
+       return getLogger(agent.getName());
+  }
+
+  /**
+   * Instructs X-Trace to start propagating the provided metadata in this thread
+   * 
+   * @param bytes
+   *          byte representation of the X-Trace metadata to start propagating
+   *          in this thread
+   */
+  public static void set(byte[] bytes) {
+    METADATA.set(bytes);
+  }
+
+  /**
+   * Instructs X-Trace to start propagating the provided metadata in this thread
+   * 
    * @param metadata
+   *          the metadata to start propagating in this thread
    */
   public static void set(Context metadata) {
-    TRACE.set(metadata);
+    METADATA.set(metadata);
   }
-  
+
   /**
-   * Merge this thread's X-Trace metadata with the provided metadata.
-   * Null metadata is allowed
-   * Semantics for a merge are:
-   *   - if the thread's current X-Trace metadata is null, then this
-   *     method behaves like the method set
-   *   - the parent event ids are always unioned
-   *   - the task id will be one of the task ids of the parents
-   *   - the tenant class will be one of the tenant classes of the parents
+   * Merge the metadata provided into the metadata currently being propagated by
+   * this thread. If nothing is currently being propagated in this thread, this
+   * method call is equivalent to set
+   * 
    * @param metadata
+   *          the metadata to merge into this thread
    */
   public static void join(Context metadata) {
-    TRACE.join(metadata);
+    METADATA.join(metadata);
   }
-  
+
   /**
-   * Merge this thread's X-Trace metadata with the provided bytes.
-   * Null bytes are allowed
-   * Semantics for a merge are:
-   *   - if the thread's current X-Trace metadata is null, then this
-   *     method behaves like the method set
-   *   - the parent event ids are always unioned
-   *   - the task id will be one of the task ids of the parents
-   *   - the tenant class will be one of the tenant classes of the parents
-   * @param metadata
+   * Merge the metadata provided into the metadata currently being propagated by
+   * this thread. If nothing is currently being propagated in this thread, this
+   * method call is equivalent to set
+   * 
+   * @param bytes
+   *          the byte representation of the X-Trace metadata to merge into this
+   *          thread
    */
   public static void join(byte[] bytes) {
-    TRACE.join(bytes);
+    METADATA.join(bytes);
   }
-  
-  
-  
+
   /**
-   * Get the current X-Trace metadata for this thread.
-   * @return An X-Trace context containing the thread's current metadata
+   * @return the X-Trace metadata being propagated in this thread
    */
   public static Context get() {
-    return TRACE.get();
+    return METADATA.get();
   }
-  
+
   /**
-   * Returns the byte representation of the current X-Trace metadata
-   * @return the byte representation of the current X-Trace metadata,
-   * or null if no metadata is set
+   * @return the byte representation of the X-Trace metadata being propagated in
+   *         this thread
    */
   public static byte[] bytes() {
-    return TRACE.bytes();
-  }
-  
-  /**
-   * If there is a metadata currently set, returns true.
-   * Note that the metadata may be an empty metadata
-   * @return true if there is a metadata set, false otherwise
-   */
-  public static boolean exists() {
-    return TRACE.exists();
-  }
-
-  
-  /**
-   * Returns true if we're able to send log messages.
-   * @return
-   */
-  public static boolean canLog() {
-    return LOG.canLog();
-  }
-  
-  public boolean hasTaskID() {
-    Context ctx = TRACE.peek();
-    return ctx!=null && ctx.hasTaskID();
-  }
-  
-  /**
-   * Returns the task ID if one is set, otherwise null
-   * @return
-   */
-  public Long getTaskID() {
-    Context ctx = TRACE.peek();
-    return ctx==null ? null : ctx.hasTaskID() ? ctx.getTaskID() : null;
-  }
-  
-  public boolean hasTenantClass() {
-    Context ctx = TRACE.peek();
-    return ctx!=null && ctx.hasTenantClass();
-  }
-  
-  /**
-   * Returns the tenant class if one is set, otherwise null
-   * @return tenant class if metadata exists and has a tenant class, null otherwise
-   */
-  public Integer getTenantClass() {
-    Context ctx = TRACE.peek();
-    return ctx==null ? null : ctx.hasTenantClass() ? ctx.getTenantClass() : null;
-  }
-  
-  
-  /**
-   * Starts a new trace, creating new metadata only if necessary.
-   * If metadata already exists, this method does nothing
-   * This method will not propagate a tenant class
-   * It is recommended to log an event after starting a trace; this method only starts the metadata propagation
-   * @param trackCausality should we track causality?
-   */
-  public static void startTrace(boolean trackCausality) {
-    if (TRACE.exists())
-      return;
-    
-    Context ctx = Context.create(Logger.random.nextLong(), null, trackCausality ? 0L : null);
-    TRACE.set(ctx);
-  }
-  
-  /**
-   * Starts a new trace, creating new metadata only if necessary.
-   * If metadata already exists, this method does nothing
-   * It is recommended to log an event after starting a trace; this method only starts the metadata propagation
-   * @param tenantclass the class of the tenant to propagate
-   * @param trackTask should we propagate a task id?
-   * @param trackCausality should we propagate event ids?
-   */
-  public static void startTenantTrace(int tenantclass, boolean trackTask, boolean trackCausality) {
-    if (TRACE.exists())
-      return;
-    
-    Context ctx = Context.create(trackTask ? Logger.random.nextLong() : null, tenantclass, (trackCausality && trackTask) ? 0L : null);
-    TRACE.set(ctx);
-  }
-  
-  /**
-   * If we are currently propagating metadata for an X-Trace task,
-   * this method logs an event for the task
-   * @param agent
-   * @param label
-   * @param fields
-   */
-  public static void logEvent(String agent, String label, Object... fields) {
-    LOG.logEvent(agent, label, fields);
+    return METADATA.bytes();
   }
 
   /**
-   * If we are currently propagating metadata for an X-Trace task,
-   * this method logs an event for the task
-   * @param agent
-   * @param label
-   * @param fields
+   * @return true if X-Trace is currently propagating metadata in this thread
    */
-  public static void logEvent(Class<?> agent, String label, Object... fields) {
-    LOG.logEvent(agent, label, fields);
+  public static boolean active() {
+    return METADATA.exists();
+  }
+
+  /**
+   * Stops propagating any X-Trace metadata in this thread
+   */
+  public static void stop() {
+    METADATA.clear();
+  }
+
+  /**
+   * @return true if a task ID is being propagated by X-Trace in this thread
+   */
+  public static boolean hasTaskID() {
+    XTraceMetadataOrBuilder xmd = METADATA.observe();
+    return xmd == null ? false : xmd.hasTaskID();
+  }
+
+  /**
+   * @return true if a tenant class is being propagated by X-Trace in this
+   *         thread
+   */
+  public static boolean hasTenantClass() {
+    XTraceMetadataOrBuilder xmd = METADATA.observe();
+    return xmd == null ? false : xmd.hasTenantClass();
+  }
+
+  /**
+   * @return the task ID currently being propagated by X-Trace in this thread,
+   *         or null if none being propagated
+   */
+  public static Long getTaskID() {
+    XTraceMetadataOrBuilder xmd = METADATA.observe();
+    return xmd == null ? null : xmd.hasTaskID() ? xmd.getTaskID() : null;
+  }
+
+  /**
+   * @return the tenant class currently being propagated by X-Trace in this
+   *         thread, or null if none being propagated
+   */
+  public static Integer getTenantClass() {
+    XTraceMetadataOrBuilder xmd = METADATA.observe();
+    return xmd == null ? null : xmd.hasTenantClass() ? xmd.getTenantClass() : null;
   }
   
+  /**
+   * @return true if the thread currently has multiple parent X-Trace event IDs,
+   * and it is therefore worth logging a message before serializing.
+   */
+  public static boolean shouldLogBeforeSerialization() {
+    XTraceMetadataOrBuilder xmd = METADATA.observe();
+    return xmd == null ? false : xmd.getParentEventIDCount() > 1;
+  }
+
+  /**
+   * Start propagating a task ID in this thread if we aren't already propagating
+   * a task ID.  If we aren't currently propagating a task ID, a new one is
+   * randomly generated
+   * 
+   * @param trackCausality
+   *          should we also track causality for this task?
+   */
+  public static void startTask(boolean trackCausality) {
+    setTask(Reporter.random.nextLong(), trackCausality);
+  }
+
+  /**
+   * Start propagating the specified taskID in this thread.  If X-Trace is already
+   * propagating a taskid in this thread, then this method call does nothing.
+   * 
+   * @param taskid
+   *          the taskID to start propagating in this thread
+   * @param trackCausality
+   *          should we also track causality for this task?
+   */
+  public static void setTask(long taskid, boolean trackCausality) {
+    XTraceMetadataOrBuilder current = METADATA.observe();
+    if (current != null && current.hasTaskID())
+      return;
+
+    if (trackCausality)
+      METADATA.modify().setTaskID(Reporter.random.nextLong()).clearParentEventID().addParentEventID(0L);
+    else
+      METADATA.modify().setTaskID(Reporter.random.nextLong()).clearParentEventID();
+  }
+
+  /**
+   * Start propagating the specified tenant class in this thread.  If X-Trace is
+   * already propagating a tenant class, then it will be overwritten by the
+   * tenant class provided.
+   */
+  public static void setTenantClass(int tenantclass) {
+    METADATA.modify().setTenantClass(tenantclass);
+  }
+  
+  
+
 }

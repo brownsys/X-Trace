@@ -10,6 +10,7 @@ import org.junit.Test;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import edu.brown.cs.systems.xtrace.Metadata.XTraceMetadata;
+import edu.brown.cs.systems.xtrace.Metadata.XTraceMetadataOrBuilder;
 import edu.brown.cs.systems.xtrace.Metadata.XTraceMetadata.Builder;
 
 public class TraceImplTest extends TestCase {
@@ -164,31 +165,42 @@ public class TraceImplTest extends TestCase {
     
     // If parents exist but ctx is not yet immutable, it should be updated
     xtrace = new Trace();
-    assertFalse(xtrace.immutable());
-    
     xtrace.set(xmd1);
-    assertFalse(xtrace.immutable());
+    XTraceMetadataOrBuilder builder = xtrace.observe();
+    assertEquals(builder, xtrace.observe());
+    assertEquals(builder, xtrace.get().observe());
+    assertEquals(builder, xtrace.observe());
+    assertEquals(builder, xtrace.get().observe());
+    xtrace.set(xtrace.get());
+    assertEquals(builder, xtrace.observe());
+    assertEquals(builder, xtrace.get().observe());
+    assertEquals(builder, xtrace.observe());
+    assertEquals(builder, xtrace.get().observe());
     
-    ctx = xtrace.get();
-    assertTrue(xtrace.immutable());
-    
+    // They're the same, so this shouldn't have any effect
     xtrace.join(xmd2);
-    assertTrue(xtrace.immutable());
-    assertEquals(ctx, xtrace.peek());
-    assertEquals(ctx, xtrace.get());
-    byte[] xmd3 = ctx.builder.build().toByteArray();
+    assertEquals(builder, xtrace.observe());
+    assertEquals(builder, xtrace.get().observe());
+    assertEquals(builder, xtrace.observe());
+    assertEquals(builder, xtrace.get().observe());
+    
+    byte[] xmd3 = xtrace.bytes();
     assertTrue(Arrays.equals(xmd1, xmd3));
     
     // Only if the ctx is immutable and parents are updated should a new one be allocated
     xtrace = new Trace();
     xmd1 = randomTaskIDAndTenantAndParents(1);
     xtrace.set(xmd1);
+    builder = xtrace.observe();
     
     xmd2 = randomTaskIDAndTenantAndParents(1);
     assertFalse(Arrays.equals(xmd1, xmd2));
     
     ctx = xtrace.get();
-    assertTrue(xtrace.immutable());
+    assertEquals(builder, xtrace.observe());
+    assertEquals(builder, xtrace.get().observe());
+    assertEquals(ctx.observe(), xtrace.observe());
+    assertEquals(ctx.observe(), xtrace.get().observe());
     
     xtrace.join(xmd2);
     Context ctx2 = xtrace.get();
@@ -196,11 +208,15 @@ public class TraceImplTest extends TestCase {
 
     assertTrue(Arrays.equals(ctx.bytes(), xmd1));
     assertFalse(Arrays.equals(ctx.bytes(), xmd2));
-    assertEquals(1, ctx.builder.getParentEventIDCount());
+    assertEquals(1, ctx.observe().getParentEventIDCount());
     assertFalse(Arrays.equals(ctx2.bytes(), xmd1));
     assertFalse(Arrays.equals(ctx2.bytes(), xmd2));
-    assertEquals(2, ctx2.builder.getParentEventIDCount());
-    
+    assertEquals(2, ctx2.observe().getParentEventIDCount());
+
+    assertFalse(builder==xtrace.observe());
+    assertFalse(builder==xtrace.get().observe());
+    assertFalse(builder==xtrace.observe());
+    assertFalse(builder==xtrace.get().observe());
   }
   
   @Test
@@ -208,18 +224,16 @@ public class TraceImplTest extends TestCase {
     Trace xtrace = new Trace();
     byte[] xmd = randomTaskIDAndTenantAndParents(1);
     xtrace.set(xmd);
-    assertFalse(xtrace.immutable());
-    Builder builder = xtrace.peek().builder;
+    XTraceMetadataOrBuilder builder = xtrace.observe();
     
     long prevParentEventID = builder.getParentEventID(0);
     long nextParentEventID = random.nextLong();
     
-    xtrace.setParentEventID(nextParentEventID);
-    assertFalse(xtrace.immutable());
-    assertEquals(builder, xtrace.peek().builder);
-    assertEquals(1, xtrace.peek().builder.getParentEventIDCount());
-    assertEquals(nextParentEventID, xtrace.peek().builder.getParentEventID(0));
-    assertFalse(xtrace.peek().builder.getParentEventID(0)==prevParentEventID);
+    xtrace.modify().clearParentEventID().addParentEventID(nextParentEventID);
+    assertEquals(builder, xtrace.observe());
+    assertEquals(1, xtrace.observe().getParentEventIDCount());
+    assertEquals(nextParentEventID, xtrace.observe().getParentEventID(0));
+    assertFalse(xtrace.observe().getParentEventID(0)==prevParentEventID);
   }
   
   @Test
@@ -227,20 +241,17 @@ public class TraceImplTest extends TestCase {
     Trace xtrace = new Trace();
     byte[] xmd = randomTaskIDAndTenantAndParents(1);
     xtrace.set(xmd);
-    assertFalse(xtrace.immutable());
     xtrace.get();
-    assertTrue(xtrace.immutable());
-    Builder builder = xtrace.peek().builder;
+    XTraceMetadataOrBuilder builder = xtrace.observe();
     
     long prevParentEventID = builder.getParentEventID(0);
     long nextParentEventID = random.nextLong();
     
-    xtrace.setParentEventID(nextParentEventID);
-    assertFalse(xtrace.immutable());
-    assertTrue(builder!=xtrace.peek().builder);
-    assertEquals(1, xtrace.peek().builder.getParentEventIDCount());
-    assertEquals(nextParentEventID, xtrace.peek().builder.getParentEventID(0));
-    assertFalse(xtrace.peek().builder.getParentEventID(0)==prevParentEventID);
+    xtrace.modify().clearParentEventID().addParentEventID(nextParentEventID);
+    assertFalse(xtrace.observe()==builder);
+    assertEquals(1, xtrace.observe().getParentEventIDCount());
+    assertEquals(nextParentEventID, xtrace.observe().getParentEventID(0));
+    assertFalse(xtrace.observe().getParentEventID(0)==prevParentEventID);
   }
   
   

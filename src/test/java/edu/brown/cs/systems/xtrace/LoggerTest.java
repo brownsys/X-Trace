@@ -4,21 +4,22 @@ import junit.framework.TestCase;
 
 import org.junit.Test;
 
+import edu.brown.cs.systems.xtrace.Metadata.XTraceMetadataOrBuilder;
 import edu.brown.cs.systems.xtrace.Reporting.XTraceReport3.Builder;
 
 public class LoggerTest extends TestCase {
   
-  static final class NullLogger extends Logger {
+  static final class NullLogger extends Reporter {
 
-    public Builder event = null;
+    public Builder report = null;
     
     public NullLogger(Trace trace) {
       super(trace);
     }
     
     @Override
-    protected void logEvent(Builder event) {
-      this.event = event;
+    protected void sendReport(Builder report) {
+      this.report = report;
     }
 
     @Override
@@ -28,23 +29,46 @@ public class LoggerTest extends TestCase {
   }
   
   @Test
-  public void testLog() {
+  public void testLogWithUpdate() {
     Trace xtrace = new Trace();
     NullLogger logger = new NullLogger(xtrace);
     
     byte[] start = TraceImplTest.randomTaskIDAndTenantAndParents(1);
     xtrace.set(start);
-    edu.brown.cs.systems.xtrace.Metadata.XTraceMetadata.Builder metadata = xtrace.get().builder;
+    XTraceMetadataOrBuilder metadata = xtrace.observe();
+    xtrace.get(); // force update
     
-    logger.logEvent("test", "my test");
-    Builder event = logger.event;
+    logger.sendReport("test", "my test");
+    Builder event = logger.report;
     assertNotNull(event);
     assertEquals("test", event.getAgent());
     assertEquals("my test", event.getLabel());
     assertEquals(metadata.getTaskID(), event.getTaskID());
     assertEquals(metadata.getParentEventID(0), event.getParentEventID(0));
-    assertEquals(xtrace.peek().builder.getParentEventID(0), event.getEventID());
-    assertFalse(metadata==xtrace.peek().builder);
+    assertEquals(xtrace.observe().getParentEventID(0), event.getEventID());
+    assertFalse(xtrace.observe().getParentEventID(0)==metadata.getParentEventID(0));
+    assertFalse(metadata==xtrace.observe());
+  }
+  
+  @Test
+  public void testLogWithoutUpdate() {
+    Trace xtrace = new Trace();
+    NullLogger logger = new NullLogger(xtrace);
+    
+    byte[] start = TraceImplTest.randomTaskIDAndTenantAndParents(1);
+    xtrace.set(start);
+    XTraceMetadataOrBuilder metadata = xtrace.observe();
+    
+    logger.sendReport("test", "my test");
+    Builder event = logger.report;
+    assertNotNull(event);
+    assertEquals("test", event.getAgent());
+    assertEquals("my test", event.getLabel());
+    assertEquals(metadata.getTaskID(), event.getTaskID());
+    assertFalse(metadata.getParentEventID(0)==event.getParentEventID(0)); // should have been reused and updated
+    assertEquals(xtrace.observe().getParentEventID(0), event.getEventID()); // should have been reused
+    assertTrue(xtrace.observe().getParentEventID(0)==metadata.getParentEventID(0));
+    assertTrue(metadata==xtrace.observe());
   }
   
   @Test
@@ -54,17 +78,38 @@ public class LoggerTest extends TestCase {
     
     byte[] start = TraceImplTest.randomTaskIDAndTenant();
     xtrace.set(start);
-    edu.brown.cs.systems.xtrace.Metadata.XTraceMetadata.Builder metadata = xtrace.get().builder;
+    XTraceMetadataOrBuilder metadata = xtrace.observe();
     
-    logger.logEvent("test", "my test");
-    Builder event = logger.event;
+    logger.sendReport("test", "my test");
+    Builder event = logger.report;
     assertNotNull(event);
     assertEquals("test", event.getAgent());
     assertEquals("my test", event.getLabel());
     assertEquals(metadata.getTaskID(), event.getTaskID());
     assertEquals(0, event.getParentEventIDCount());
     assertFalse(event.hasEventID());
-    assertTrue(metadata==xtrace.peek().builder);
+    assertTrue(metadata==xtrace.observe());
+  }
+  
+  @Test
+  public void testLogOnlyTaskIDAndInvalidate() {
+    Trace xtrace = new Trace();
+    NullLogger logger = new NullLogger(xtrace);
+    
+    byte[] start = TraceImplTest.randomTaskIDAndTenant();
+    xtrace.set(start);
+    XTraceMetadataOrBuilder metadata = xtrace.observe();
+    xtrace.get();
+    
+    logger.sendReport("test", "my test");
+    Builder event = logger.report;
+    assertNotNull(event);
+    assertEquals("test", event.getAgent());
+    assertEquals("my test", event.getLabel());
+    assertEquals(metadata.getTaskID(), event.getTaskID());
+    assertEquals(0, event.getParentEventIDCount());
+    assertFalse(event.hasEventID());
+    assertTrue(metadata==xtrace.observe());
   }
   
   @Test
@@ -76,10 +121,10 @@ public class LoggerTest extends TestCase {
     xtrace.set(start);
     Context ctx = xtrace.get();
     
-    logger.logEvent("test", "my test");
-    Builder event = logger.event;
+    logger.sendReport("test", "my test");
+    Builder event = logger.report;
     assertNull(event);
-    assertTrue(xtrace.peek()==ctx);
+    assertTrue(xtrace.get()==ctx);
   }
 
 }

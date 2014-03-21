@@ -281,7 +281,7 @@ public class TraceImplPerf extends TestCase {
     long start = System.nanoTime();
     int count = 0;
     for (int i = 0; i < perIteration; i++) {
-      xtrace.setParentEventID(0, true);
+      xtrace.modify().clearParentEventID().addParentEventID(TraceImplTest.random.nextLong());
       count++;
     }
     long cycles = tbean.getCurrentThreadCpuTime() - startcpu;
@@ -299,7 +299,8 @@ public class TraceImplPerf extends TestCase {
     long start = System.nanoTime();
     int count = 0;
     for (int i = 0; i < perIteration; i++) {
-      xtrace.setParentEventID(0, false);
+      xtrace.get();
+      xtrace.modify().clearParentEventID().addParentEventID(TraceImplTest.random.nextLong());
       count++;
     }
     long cycles = tbean.getCurrentThreadCpuTime() - startcpu;

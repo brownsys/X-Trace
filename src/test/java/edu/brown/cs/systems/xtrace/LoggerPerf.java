@@ -5,7 +5,6 @@ import java.lang.management.ThreadMXBean;
 import java.text.DecimalFormat;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 import junit.framework.TestCase;
@@ -15,7 +14,6 @@ import org.junit.Test;
 import edu.brown.cs.systems.xtrace.LoggerTest.NullLogger;
 import edu.brown.cs.systems.xtrace.Metadata.XTraceMetadata;
 import edu.brown.cs.systems.xtrace.Metadata.XTraceMetadata.Builder;
-import edu.brown.cs.systems.xtrace.impl.PubSubLogger;
 
 /**
  * Performance tests of X-Trace metadata
@@ -24,7 +22,7 @@ import edu.brown.cs.systems.xtrace.impl.PubSubLogger;
  */
 public class LoggerPerf extends TestCase {
 
-  static final class DQLogger extends PubSubLogger {
+  static final class DQLogger extends PubSubReporter {
 
     public DQLogger(Trace trace) {
       super(trace, "localhost", 9999);
@@ -54,7 +52,7 @@ public class LoggerPerf extends TestCase {
   private static final ThreadMXBean tbean = ManagementFactory.getThreadMXBean();
   private static final Random random = new Random();
   
-  private void doWork(final Logger logger, int numthreads, final int iterations, final boolean taskid, final boolean tenantid, final boolean parentid) {
+  private void doWork(final Reporter logger, int numthreads, final int iterations, final boolean taskid, final boolean tenantid, final boolean parentid) {
 
     final AtomicLong totalcount = new AtomicLong();
     final AtomicLong totalduration = new AtomicLong();
@@ -89,7 +87,7 @@ public class LoggerPerf extends TestCase {
         long start = System.nanoTime();
         int i = 0;
         for (; i < iterations; i++) {
-          logger.logEvent(LoggerPerf.class, "Logging event");
+          logger.sendReport(LoggerPerf.class, "Logging event");
         }
         long duration = System.nanoTime() - start;
         long cycles = tbean.getCurrentThreadCpuTime() - startcycles;
@@ -121,7 +119,7 @@ public class LoggerPerf extends TestCase {
   public void testReportGenerationSpeedNull() {
     System.out.println("CREATE NULL");
     Trace xtrace = new Trace();
-    Logger logger = new NullLogger(xtrace);
+    Reporter logger = new NullLogger(xtrace);
     doWork(logger, 1, 10000000, false, false, false);
   }
   
@@ -129,7 +127,7 @@ public class LoggerPerf extends TestCase {
   public void testReportGenerationSpeedTenantID() {
     System.out.println("CREATE TENANTID");
     Trace xtrace = new Trace();
-    Logger logger = new NullLogger(xtrace);
+    Reporter logger = new NullLogger(xtrace);
     doWork(logger, 1, 10000000, false, true, false);
   }
   
@@ -137,7 +135,7 @@ public class LoggerPerf extends TestCase {
   public void testReportGenerationSpeedTaskID() {
     System.out.println("CREATE TASKID");
     Trace xtrace = new Trace();
-    Logger logger = new NullLogger(xtrace);
+    Reporter logger = new NullLogger(xtrace);
     doWork(logger, 1, 10000000, true, false, false);
   }
   
@@ -145,7 +143,7 @@ public class LoggerPerf extends TestCase {
   public void testReportGenerationSpeedCausality() {
     System.out.println("CREATE TASKID+CAUSALITY");
     Trace xtrace = new Trace();
-    Logger logger = new NullLogger(xtrace);
+    Reporter logger = new NullLogger(xtrace);
     doWork(logger, 1, 10000000, true, false, true);
   }
   
@@ -153,7 +151,7 @@ public class LoggerPerf extends TestCase {
   public void testReportingSpeedNull() {
     System.out.println("CREATE+SEND NULL");
     Trace xtrace = new Trace();
-    Logger logger = new DQLogger(xtrace);
+    Reporter logger = new DQLogger(xtrace);
     doWork(logger, 1, 10000000, false, false, false);
     logger.close();
   }
@@ -162,7 +160,7 @@ public class LoggerPerf extends TestCase {
   public void testReportingSpeedTenantID() {
     System.out.println("CREATE+SEND TENANTID");
     Trace xtrace = new Trace();
-    Logger logger = new DQLogger(xtrace);
+    Reporter logger = new DQLogger(xtrace);
     doWork(logger, 1, 10000000, false, true, false);
     logger.close();
   }
@@ -171,7 +169,7 @@ public class LoggerPerf extends TestCase {
   public void testReportingSpeedTaskID() {
     System.out.println("CREATE+SEND TASKID");
     Trace xtrace = new Trace();
-    Logger logger = new DQLogger(xtrace);
+    Reporter logger = new DQLogger(xtrace);
     doWork(logger, 1, 10000000, true, false, false);
     logger.close();
   }
@@ -180,7 +178,7 @@ public class LoggerPerf extends TestCase {
   public void testReportingSpeedCausality() {
     System.out.println("CREATE+SEND TASKID+CAUSALITY");
     Trace xtrace = new Trace();
-    Logger logger = new DQLogger(xtrace);
+    Reporter logger = new DQLogger(xtrace);
     doWork(logger, 1, 10000000, true, false, true);
     logger.close();
   }
@@ -189,7 +187,7 @@ public class LoggerPerf extends TestCase {
   public void testReportingSpeedTenantID10() {
     System.out.println("CREATE+SENDx10 TENANTID");
     Trace xtrace = new Trace();
-    Logger logger = new DQLogger(xtrace);
+    Reporter logger = new DQLogger(xtrace);
     doWork(logger, 10, 1000000, false, true, false);
     logger.close();
   }
@@ -198,7 +196,7 @@ public class LoggerPerf extends TestCase {
   public void testReportingSpeedTaskID10() {
     System.out.println("CREATE+SENDx10 TASKID");
     Trace xtrace = new Trace();
-    Logger logger = new DQLogger(xtrace);
+    Reporter logger = new DQLogger(xtrace);
     doWork(logger, 10, 1000000, true, false, false);
     logger.close();
   }
@@ -207,7 +205,7 @@ public class LoggerPerf extends TestCase {
   public void testReportingSpeedCausality10() {
     System.out.println("CREATE+SENDx10 TASKID+CAUSALITY");
     Trace xtrace = new Trace();
-    Logger logger = new DQLogger(xtrace);
+    Reporter logger = new DQLogger(xtrace);
     doWork(logger, 10, 1000000, true, false, true);
     logger.close();
   }

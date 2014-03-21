@@ -22,7 +22,7 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import edu.brown.cs.systems.xtrace.Settings;
+import edu.brown.cs.systems.xtrace.XTraceSettings;
 import edu.brown.cs.systems.xtrace.server.api.MetadataStore;
 import edu.brown.cs.systems.xtrace.server.api.Report;
 import edu.brown.cs.systems.xtrace.server.api.TaskRecord;
@@ -36,7 +36,7 @@ public class DerbyMetadataStore implements MetadataStore {
    */
   public static DerbyMetadataStore getInstance() throws Exception {
     if (INSTANCE == null)
-      INSTANCE = new DerbyMetadataStore(Settings.DATASTORE_DIRECTORY + "/derby/");
+      INSTANCE = new DerbyMetadataStore(XTraceSettings.DATASTORE_DIRECTORY + "/derby/");
     return INSTANCE;
   }
 
@@ -487,7 +487,7 @@ public class DerbyMetadataStore implements MetadataStore {
         // Wait until the next allowed processing time
         try {
           long tosleep;
-          while ((tosleep = (last_processing_time + Settings.DATABASE_UPDATE_INTERVAL - System.currentTimeMillis())) > 0) {
+          while ((tosleep = (last_processing_time + XTraceSettings.DATABASE_UPDATE_INTERVAL - System.currentTimeMillis())) > 0) {
             Thread.sleep(tosleep);
           }
         } catch (InterruptedException e) {

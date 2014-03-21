@@ -5,7 +5,7 @@ import org.apache.log4j.Logger;
 import edu.brown.cs.systems.pubsub.Subscriber;
 import edu.brown.cs.systems.pubsub.Subscriber.Callback;
 import edu.brown.cs.systems.xtrace.Reporting.XTraceReport3;
-import edu.brown.cs.systems.xtrace.Settings;
+import edu.brown.cs.systems.xtrace.XTraceSettings;
 import edu.brown.cs.systems.xtrace.server.api.DataStore;
 import edu.brown.cs.systems.xtrace.server.api.MetadataStore;
 
@@ -18,7 +18,7 @@ public class PubSubSource extends Callback<XTraceReport3> {
 
   public PubSubSource(String serverHostname, int pubsubSubscribePort, DataStore data, MetadataStore metadata) {
     subscriber = new Subscriber(serverHostname, pubsubSubscribePort);
-    subscriber.subscribe(Settings.PUBSUB_TOPIC, this);
+    subscriber.subscribe(XTraceSettings.PUBSUB_TOPIC, this);
     this.data = data;
     this.metadata = metadata;
   }
