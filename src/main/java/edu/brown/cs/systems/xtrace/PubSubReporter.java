@@ -26,6 +26,7 @@ class PubSubReporter extends Reporter implements Runnable {
   protected final Thread worker;
   private int port;
   private String hostname;
+  private final Publisher publisher;
 
   /**
    * Creates a new log implementation, using the default pubsub server hostname
@@ -53,6 +54,7 @@ class PubSubReporter extends Reporter implements Runnable {
     super(trace);
     this.hostname = hostname;
     this.port = port;
+    publisher = new Publisher(hostname, port);
     worker = new Thread(this);
     worker.start();
   }
@@ -75,33 +77,22 @@ class PubSubReporter extends Reporter implements Runnable {
 
   @Override
   public void run() {
-    // Don't actually create the publisher until we first receive a report
-    Publisher publisher;
+    // Just run until we're done, interrupted, or get an exception
     try {
-      Builder next = outgoing.take();
-      publisher = new Publisher(hostname, port);
-      publisher.publish(XTraceSettings.PUBSUB_TOPIC, next.build());
-
-
-      // Now just run until we're done, interrupted, or get an exception
-      try {
-        while (alive && !Thread.currentThread().isInterrupted()) {
-          publisher.publish(XTraceSettings.PUBSUB_TOPIC, outgoing.take().build());
-        }
-      } catch (Exception e) {
-        alive = false;
+      while (alive && !Thread.currentThread().isInterrupted()) {
+        publisher.publish(XTraceSettings.PUBSUB_TOPIC, outgoing.take().build());
       }
-
-      // Clear the queue
-      while (!outgoing.isEmpty())
-        publisher.publish(XTraceSettings.PUBSUB_TOPIC, outgoing.poll().build());
-
-      // Close the publisher
-      publisher.close();
-      
     } catch (Exception e) {
       alive = false;
     }
+
+    // Clear the queue
+    while (!outgoing.isEmpty())
+      publisher.publish(XTraceSettings.PUBSUB_TOPIC, outgoing.poll().build());
+
+    // Close the publisher
+    publisher.close();
+
   }
 
 }
