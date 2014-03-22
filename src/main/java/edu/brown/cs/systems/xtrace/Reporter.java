@@ -13,130 +13,211 @@ import edu.brown.cs.systems.xtrace.Reporting.XTraceReport3.Builder;
 /**
  * The Reporter class is the base class for X-Trace reporting.
  * 
- * In X-Trace v3, it is separated from metadata propagation; one of the motivations of
- * X-Trace v3 is to be able to use the X-Trace metadata propagation for purposes other than sending reports
+ * In X-Trace v3, it is separated from metadata propagation; one of the
+ * motivations of X-Trace v3 is to be able to use the X-Trace metadata
+ * propagation for purposes other than sending reports
  * 
- * Reporter is an abstract class that can be extended to provide custom reporting implementations.
- * Out of the box, X-Trace v3 offers 0MQ Pub-sub logging only.
+ * Reporter is an abstract class that can be extended to provide custom
+ * reporting implementations. Out of the box, X-Trace v3 offers 0MQ Pub-sub
+ * logging only.
  * 
  * @author Jonathan Mace
  */
-abstract class Reporter {
-  
+public abstract class Reporter {
+
   /**
-   * An interface to automatically add additional fields to XTrace reports when they're created.
-   * Register decorators using the setDecorator method.  For now, only one decorator may
-   * be registered
+   * An interface to automatically add additional fields to XTrace reports when
+   * they're created. Register decorators using the setDecorator method. For
+   * now, only one decorator may be registered
+   * 
    * @author Jonathan Mace
    */
   public static interface Decorator {
     public Builder decorate(Builder builder);
   }
-  
-  protected static final Random random = new Random(31*(17 * Utils.getHost().hashCode() + Utils.getProcessID())*System.currentTimeMillis());
-  
+
+  protected static final Random random = new Random(31 * (17 * Utils.getHost().hashCode() + Utils.getProcessID()) * System.currentTimeMillis());
+
   protected final Trace xtrace;
   protected static final String host = Utils.getHost();
   protected static final int procid = Utils.getProcessID();
   protected static String procname = Utils.getProcessName();
-  
+
   Reporter(Trace trace) {
     this.xtrace = trace;
   }
-  
+
   protected Decorator decorator = null;
-  
+
   public void setDecorator(Decorator decorator) {
     this.decorator = decorator;
   }
-  
-  public Builder createReport(String agent, String label, Object... fields) {
-    // Create a builder and fill in the automatic fields
+
+  /**
+   * Creates a new report builder. X-Trace metadata fields are only ever added
+   * at report send time, by the sendReport method
+   * 
+   * @return a new Builder for an XTraceReport3 with some fields such as
+   *         timestamp, host, processid etc. filled in.
+   */
+  public static Builder createReport() {
     Builder builder = XTraceReport3.newBuilder();
-    decorate(builder);
-    
-    // Set the user-defined fields
+    builder.setHost(host);
+    builder.setProcessID(procid);
+    builder.setProcessName(procname);
+    builder.setThreadID((int) Thread.currentThread().getId());
+    builder.setThreadName(Thread.currentThread().getName());
+    builder.setTimestamp(System.currentTimeMillis());
+    builder.setHRT(System.nanoTime());
+    return builder;
+  }
+
+  /**
+   * Creates a new report builder. X-Trace metadata fields are only ever added
+   * at report send time, by the sendReport method
+   * 
+   * @return a new Builder for an XTraceReport3 with the fields of createReport
+   *         added and also the provided agent, label and user-defined fields
+   */
+  public static Builder createReport(String agent, String label, Object... fields) {
+    Builder builder = createReport();
     builder.setAgent(agent);
     builder.setLabel(label);
     for (Object obj : fields) {
-      if (obj!=null)
+      if (obj != null)
         builder.addValues(obj.toString());
       else
         builder.addValues("null");
     }
-    
     return builder;
   }
-  
-  public void decorate(Builder builder) {
-    // Take a look at the current XTrace metadata
-    XTraceMetadataOrBuilder metadata = xtrace.observe();
-    builder.setTaskID(metadata.getTaskID());
-    
-    // Record the tenant class if necessary
-    if (metadata.hasTenantClass())
-      builder.setTenantClass(metadata.getTenantClass());
-    
-    // Record causality if necessary
-    if(metadata.getParentEventIDCount()!=0) {
-      builder.addAllParentEventID(metadata.getParentEventIDList());
-      long neweventid = random.nextLong();
-      builder.setEventID(neweventid);
-      xtrace.modify().clearParentEventID().addParentEventID(neweventid);
-    }
-    
-    // Set a bunch of simple fields
-    builder.setHost(host);
-    builder.setProcessID(procid);
-    builder.setProcessName(procname);
-    builder.setThreadID((int)Thread.currentThread().getId());
-    builder.setThreadName(Thread.currentThread().getName());
-    builder.setTimestamp(System.currentTimeMillis());
-    builder.setHRT(System.nanoTime());
-    
-    // Decorate, if a decorator has been provided
-    if (decorator!=null)
-      decorator.decorate(builder);
-  }
-  
+
   /**
    * @return true if we're currently able to send reports
    */
   public boolean valid() {
     XTraceMetadataOrBuilder metadata = xtrace.observe();
-    return metadata!=null && metadata.hasTaskID();
+    return metadata != null && metadata.hasTaskID();
   }
-  
-  public void sendReport(String agent, String label, Object... fields) {
+
+  /**
+   * Send an X-Trace report. This method call will do nothing if the current
+   * X-Trace metadata is invalid
+   * 
+   * @param agent
+   *          An agent to log this report against
+   * @param label
+   *          The message of the report
+   * @param fields
+   *          Additional values to include in the report. toString will be
+   *          called on each of these
+   */
+  public void report(String agent, String label, Object... fields) {
     if (!valid())
       return;
-    
-    sendReport(createReport(agent, label, fields));
+
+    sendReport(createReport(agent, label, fields), true);
   }
-  
-  public void sendReport(Class<?> agent, String label, Object... fields) {
+
+  /**
+   * Send an X-Trace report. This method call will do nothing if the current
+   * X-Trace metadata is invalid
+   * 
+   * @param agent
+   *          An agent to log this report against
+   * @param label
+   *          The message of the report
+   * @param fields
+   *          Additional values to include in the report. toString will be
+   *          called on each of these
+   */
+  public void report(Class<?> agent, String label, Object... fields) {
     if (!valid())
       return;
-    
-    sendReport(createReport(agent.toString(), label, fields));
+
+    sendReport(createReport(agent.toString(), label, fields), true);
   }
-  
-  protected abstract void sendReport(Builder report);
+
+  /**
+   * Sends the provided report, attaching values for the current X-Trace
+   * metadata to the report This method does not perform any checks to ensure
+   * that reporting is allowed. Clients utilizing this method (over the agent,
+   * label implementations) must perform their own checking.
+   * 
+   * @param report
+   *          The report to finalize and then send
+   */
+  public void report(Builder report) {
+    sendReport(report, true);
+  }
+
+  /**
+   * Sends the provided builder without attaching any values for the current
+   * X-Trace metadata This method does not perform any checks to ensure that
+   * reporting is allowed. Clients utilizing this method (over the agent, label
+   * implementations) must perform their own checking.
+   * 
+   * @param report
+   *          The report to send
+   */
+  public void reportNoXTrace(Builder report) {
+    sendReport(report, false);
+  }
+
+  /**
+   * Called before a report is about to be sent. The last opportunity to add
+   * fields to the report. Here is where we add the XTrace metadata if desired
+   */
+  protected void sendReport(Builder builder, boolean includeXTrace) {
+    // Apply the user-defined decorator
+    if (decorator != null)
+      decorator.decorate(builder);
+
+    // Add XTrace metadata if desired
+    if (includeXTrace) {
+      XTraceMetadataOrBuilder metadata = xtrace.observe();
+      if (metadata != null) {
+        builder.setTaskID(metadata.getTaskID());
+
+        // Record the tenant class if necessary
+        if (metadata.hasTenantClass())
+          builder.setTenantClass(metadata.getTenantClass());
+
+        // Record causality if necessary
+        if (metadata.getParentEventIDCount() != 0) {
+          builder.addAllParentEventID(metadata.getParentEventIDList());
+          long neweventid = random.nextLong();
+          builder.setEventID(neweventid);
+          xtrace.modify().clearParentEventID().addParentEventID(neweventid);
+        }
+      }
+    }
+
+    doSend(builder);
+  }
+
+  /**
+   * Actual method for subclasses to implement to do the sending of a report
+   * 
+   * @param report
+   *          The report to send
+   */
+  protected abstract void doSend(Builder report);
 
   protected abstract void close();
-  
+
   private static class Utils {
 
     private static Class<?> MainClass;
     private static String ProcessName;
     private static Integer ProcessID;
     private static String Host;
-    
-    public static Class<?> getMainClass(){
-      if (MainClass==null) {
+
+    public static Class<?> getMainClass() {
+      if (MainClass == null) {
         Collection<StackTraceElement[]> stacks = Thread.getAllStackTraces().values();
         for (StackTraceElement[] currStack : stacks) {
-          if (currStack.length==0)
+          if (currStack.length == 0)
             continue;
           StackTraceElement lastElem = currStack[currStack.length - 1];
           if (lastElem.getMethodName().equals("main")) {
@@ -144,7 +225,7 @@ abstract class Reporter {
               String mainClassName = lastElem.getClassName();
               MainClass = Class.forName(mainClassName);
             } catch (ClassNotFoundException e) {
-              // bad class name in line containing main?! 
+              // bad class name in line containing main?!
               // shouldn't happen
               e.printStackTrace();
             }
@@ -153,28 +234,28 @@ abstract class Reporter {
       }
       return MainClass;
     }
-    
+
     public static String getProcessName() {
-      if (ProcessName==null) {
+      if (ProcessName == null) {
         Class<?> mainClass = getMainClass();
-        if (mainClass==null)
+        if (mainClass == null)
           return "";
         else
           ProcessName = mainClass.getSimpleName();
       }
       return ProcessName;
     }
-    
+
     public static int getProcessID() {
-      if (ProcessID==null) {
+      if (ProcessID == null) {
         String procname = ManagementFactory.getRuntimeMXBean().getName();
         ProcessID = Integer.parseInt(procname.substring(0, procname.indexOf('@')));
       }
       return ProcessID;
     }
-    
+
     public static String getHost() {
-      if (Host==null) {
+      if (Host == null) {
         try {
           Host = InetAddress.getLocalHost().getHostName();
         } catch (UnknownHostException e) {

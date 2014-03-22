@@ -70,7 +70,7 @@ class PubSubReporter extends Reporter implements Runnable {
   }
 
   @Override
-  protected void sendReport(Builder report) {
+  protected void doSend(Builder report) {
     if (alive)
       outgoing.add(report);
   }

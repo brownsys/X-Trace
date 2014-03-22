@@ -27,7 +27,10 @@ public class XTrace {
     /** Creates and sends a report */
     public void log(String message, Object... labels);
     /** Decorates then sends the provided report */
-    public void log(XTraceReport3.Builder report);
+    public void log(Builder report);
+    /** Decorates then sends the provided report which came from an out-of-band source,
+     * so the XTrace metadata for the current thread is not appended before sending */
+    public void logOOB(Builder report);
   }
   
   /** If logging is turned off for an agent, then they're given the null logger which does nothing */
@@ -38,6 +41,8 @@ public class XTrace {
     public void log(String message, Object... labels) {
     }
     public void log(Builder report) {
+    }
+    public void logOOB(Builder report) {
     }
   };
   
@@ -50,11 +55,13 @@ public class XTrace {
       return REPORTER.valid();
     }
     public void log(String message, Object... labels) {
-      REPORTER.sendReport(agent, message, labels);
+      REPORTER.report(agent, message, labels);
     }
     public void log(XTraceReport3.Builder report) {
-      REPORTER.decorate(report);
-      REPORTER.sendReport(report);
+      REPORTER.report(report);
+    }
+    public void logOOB(XTraceReport3.Builder report) {
+      REPORTER.reportNoXTrace(report);
     }
   }
   

@@ -87,7 +87,7 @@ public class LoggerPerf extends TestCase {
         long start = System.nanoTime();
         int i = 0;
         for (; i < iterations; i++) {
-          logger.sendReport(LoggerPerf.class, "Logging event");
+          logger.report(LoggerPerf.class, "Logging event");
         }
         long duration = System.nanoTime() - start;
         long cycles = tbean.getCurrentThreadCpuTime() - startcycles;

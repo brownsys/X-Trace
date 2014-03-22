@@ -18,7 +18,7 @@ public class LoggerTest extends TestCase {
     }
     
     @Override
-    protected void sendReport(Builder report) {
+    protected void doSend(Builder report) {
       this.report = report;
     }
 
@@ -38,7 +38,7 @@ public class LoggerTest extends TestCase {
     XTraceMetadataOrBuilder metadata = xtrace.observe();
     xtrace.get(); // force update
     
-    logger.sendReport("test", "my test");
+    logger.report("test", "my test");
     Builder event = logger.report;
     assertNotNull(event);
     assertEquals("test", event.getAgent());
@@ -59,7 +59,7 @@ public class LoggerTest extends TestCase {
     xtrace.set(start);
     XTraceMetadataOrBuilder metadata = xtrace.observe();
     
-    logger.sendReport("test", "my test");
+    logger.report("test", "my test");
     Builder event = logger.report;
     assertNotNull(event);
     assertEquals("test", event.getAgent());
@@ -80,7 +80,7 @@ public class LoggerTest extends TestCase {
     xtrace.set(start);
     XTraceMetadataOrBuilder metadata = xtrace.observe();
     
-    logger.sendReport("test", "my test");
+    logger.report("test", "my test");
     Builder event = logger.report;
     assertNotNull(event);
     assertEquals("test", event.getAgent());
@@ -101,7 +101,7 @@ public class LoggerTest extends TestCase {
     XTraceMetadataOrBuilder metadata = xtrace.observe();
     xtrace.get();
     
-    logger.sendReport("test", "my test");
+    logger.report("test", "my test");
     Builder event = logger.report;
     assertNotNull(event);
     assertEquals("test", event.getAgent());
@@ -121,7 +121,7 @@ public class LoggerTest extends TestCase {
     xtrace.set(start);
     Context ctx = xtrace.get();
     
-    logger.sendReport("test", "my test");
+    logger.report("test", "my test");
     Builder event = logger.report;
     assertNull(event);
     assertTrue(xtrace.get()==ctx);
