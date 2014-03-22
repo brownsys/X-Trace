@@ -24,19 +24,20 @@ message XTraceReport3 {
 	
 	// Messages
 	optional string label = 12; // String text message
-	repeated string values = 13; // String key-value pairs
-	repeated string tags = 14; // Database tags
-	optional string title = 16; // Trace title; rarely appears so higher proto number
+	repeated string key = 13; // keys for custom fields; only add a key if you will also add a value
+	repeated string value = 14; // keys for custom values; only add a value if you also added a key
+	repeated string tags = 16; // Database tags
+	optional string title = 17; // Trace title; rarely appears so higher proto number
 	
 	// X-Trace Tenant field
 	optional int32 tenantClass = 15;
 	
 	// X-Trace Causality fields
-	optional sfixed64 eventID = 17;
-	repeated sfixed64 parentEventID = 18;
+	optional sfixed64 eventID = 18;
+	repeated sfixed64 parentEventID = 19;
 	
 	// Resource Tracing and other fields
-	optional string op = 19;
+	optional string op = 20;
 }
 
 // A container for the string representation of X-Trace version 2 reports.  Deprecated

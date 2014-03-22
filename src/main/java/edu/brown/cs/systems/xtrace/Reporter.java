@@ -82,11 +82,12 @@ public abstract class Reporter {
   public static Builder createReport(String label, Object... fields) {
     Builder builder = createReport();
     builder.setLabel(label);
-    for (Object obj : fields) {
-      if (obj != null)
-        builder.addValues(obj.toString());
-      else
-        builder.addValues("null");
+    for (int i = 0; i < fields.length-1; i+=2) {
+      // Key cannot be null, but value can
+      if (fields[i]!=null) {
+        builder.addKey(fields[i].toString());
+        builder.addValue(fields[i+1]==null ? "null" : fields[i+1].toString());
+      }
     }
     return builder;
   }
