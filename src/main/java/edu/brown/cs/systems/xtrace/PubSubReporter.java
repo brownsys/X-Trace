@@ -24,8 +24,6 @@ class PubSubReporter extends Reporter implements Runnable {
   protected final BlockingQueue<Builder> outgoing = new LinkedBlockingQueue<Builder>();
   protected volatile boolean alive = true;
   protected final Thread worker;
-  private int port;
-  private String hostname;
   private final Publisher publisher;
 
   /**
@@ -52,8 +50,6 @@ class PubSubReporter extends Reporter implements Runnable {
    */
   public PubSubReporter(Trace trace, String hostname, int port) {
     super(trace);
-    this.hostname = hostname;
-    this.port = port;
     publisher = new Publisher(hostname, port);
     worker = new Thread(this);
     worker.start();

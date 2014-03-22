@@ -79,9 +79,8 @@ public abstract class Reporter {
    * @return a new Builder for an XTraceReport3 with the fields of createReport
    *         added and also the provided agent, label and user-defined fields
    */
-  public static Builder createReport(String agent, String label, Object... fields) {
+  public static Builder createReport(String label, Object... fields) {
     Builder builder = createReport();
-    builder.setAgent(agent);
     builder.setLabel(label);
     for (Object obj : fields) {
       if (obj != null)
@@ -116,26 +115,7 @@ public abstract class Reporter {
     if (!valid())
       return;
 
-    sendReport(createReport(agent, label, fields), true);
-  }
-
-  /**
-   * Send an X-Trace report. This method call will do nothing if the current
-   * X-Trace metadata is invalid
-   * 
-   * @param agent
-   *          An agent to log this report against
-   * @param label
-   *          The message of the report
-   * @param fields
-   *          Additional values to include in the report. toString will be
-   *          called on each of these
-   */
-  public void report(Class<?> agent, String label, Object... fields) {
-    if (!valid())
-      return;
-
-    sendReport(createReport(agent.toString(), label, fields), true);
+    sendReport(agent, createReport(label, fields), true);
   }
 
   /**
@@ -147,8 +127,8 @@ public abstract class Reporter {
    * @param report
    *          The report to finalize and then send
    */
-  public void report(Builder report) {
-    sendReport(report, true);
+  public void report(String agent, Builder report) {
+    sendReport(agent, report, true);
   }
 
   /**
@@ -160,15 +140,18 @@ public abstract class Reporter {
    * @param report
    *          The report to send
    */
-  public void reportNoXTrace(Builder report) {
-    sendReport(report, false);
+  public void reportNoXTrace(String agent, Builder report) {
+    sendReport(agent, report, false);
   }
 
   /**
    * Called before a report is about to be sent. The last opportunity to add
    * fields to the report. Here is where we add the XTrace metadata if desired
    */
-  protected void sendReport(Builder builder, boolean includeXTrace) {
+  protected void sendReport(String agent, Builder builder, boolean includeXTrace) {
+    // Set the agent
+    builder.setAgent(agent);
+    
     // Apply the user-defined decorator
     if (decorator != null)
       decorator.decorate(builder);

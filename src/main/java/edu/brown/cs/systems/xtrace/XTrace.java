@@ -58,10 +58,10 @@ public class XTrace {
       REPORTER.report(agent, message, labels);
     }
     public void log(XTraceReport3.Builder report) {
-      REPORTER.report(report);
+      REPORTER.report(agent, report);
     }
     public void logOOB(XTraceReport3.Builder report) {
-      REPORTER.reportNoXTrace(report);
+      REPORTER.reportNoXTrace(agent, report);
     }
   }
   
