@@ -78,7 +78,7 @@ public class XTrace {
   
   public static Logger getLogger(String agent) {
     if (agent==null)
-      return NULL_LOGGER;
+      return getLogger();
     else if (XTraceSettings.REPORTING_ENABLED_DEFAULT && !XTraceSettings.REPORTING_DISABLED.contains(agent))
       return new LoggerImpl(agent);
     else if (XTraceSettings.REPORTING_ENABLED.contains(agent))
