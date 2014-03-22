@@ -50,9 +50,25 @@ abstract class Reporter {
     this.decorator = decorator;
   }
   
-  protected Builder createReport(String agent, String label, Object... fields) {
+  public Builder createReport(String agent, String label, Object... fields) {
+    // Create a builder and fill in the automatic fields
     Builder builder = XTraceReport3.newBuilder();
+    decorate(builder);
     
+    // Set the user-defined fields
+    builder.setAgent(agent);
+    builder.setLabel(label);
+    for (Object obj : fields) {
+      if (obj!=null)
+        builder.addValues(obj.toString());
+      else
+        builder.addValues("null");
+    }
+    
+    return builder;
+  }
+  
+  public void decorate(Builder builder) {
     // Take a look at the current XTrace metadata
     XTraceMetadataOrBuilder metadata = xtrace.observe();
     builder.setTaskID(metadata.getTaskID());
@@ -78,21 +94,9 @@ abstract class Reporter {
     builder.setTimestamp(System.currentTimeMillis());
     builder.setHRT(System.nanoTime());
     
-    // Set the user-defined fields
-    builder.setAgent(agent);
-    builder.setLabel(label);
-    for (Object obj : fields) {
-      if (obj!=null)
-        builder.addValues(obj.toString());
-      else
-        builder.addValues("null");
-    }
-    
     // Decorate, if a decorator has been provided
     if (decorator!=null)
-      return decorator.decorate(builder);
-    else
-      return builder;
+      decorator.decorate(builder);
   }
   
   /**

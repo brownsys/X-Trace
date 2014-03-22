@@ -1,6 +1,8 @@
 package edu.brown.cs.systems.xtrace;
 
 import edu.brown.cs.systems.xtrace.Metadata.XTraceMetadataOrBuilder;
+import edu.brown.cs.systems.xtrace.Reporting.XTraceReport3;
+import edu.brown.cs.systems.xtrace.Reporting.XTraceReport3.Builder;
 
 /**
  * The front door to X-Trace v3.
@@ -20,8 +22,12 @@ public class XTrace {
   static final Reporter REPORTER = new PubSubReporter(METADATA);
   
   public interface Logger {
+    /** Returns true if this logger is currently able to send reports */
     public boolean valid();
-    public void log(String message, Object... labels);    
+    /** Creates and sends a report */
+    public void log(String message, Object... labels);
+    /** Decorates then sends the provided report */
+    public void log(XTraceReport3.Builder report);
   }
   
   /** If logging is turned off for an agent, then they're given the null logger which does nothing */
@@ -30,6 +36,8 @@ public class XTrace {
       return false;
     }
     public void log(String message, Object... labels) {
+    }
+    public void log(Builder report) {
     }
   };
   
@@ -43,6 +51,10 @@ public class XTrace {
     }
     public void log(String message, Object... labels) {
       REPORTER.sendReport(agent, message, labels);
+    }
+    public void log(XTraceReport3.Builder report) {
+      REPORTER.decorate(report);
+      REPORTER.sendReport(report);
     }
   }
   

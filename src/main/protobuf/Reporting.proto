@@ -5,7 +5,7 @@ option java_outer_classname = "Reporting";
 
 // The report specification for X-Trace version 3.  Preferred
 message XTraceReport3 {
-	// XTrace Task ID (left as optional, but for now we consider it required)
+	// X-Trace Task ID (left as optional, but for now we consider it required)
 	optional sfixed64 taskID = 1;
 	
 	// Timestamp fields
@@ -28,12 +28,15 @@ message XTraceReport3 {
 	repeated string tags = 14; // Database tags
 	optional string title = 16; // Trace title; rarely appears so higher proto number
 	
-	// XTrace Tenant field
+	// X-Trace Tenant field
 	optional int32 tenantClass = 15;
 	
-	// X-Trace causality fields
+	// X-Trace Causality fields
 	optional sfixed64 eventID = 17;
 	repeated sfixed64 parentEventID = 18;
+	
+	// Resource Tracing and other fields
+	optional string op = 19;
 }
 
 // A container for the string representation of X-Trace version 2 reports.  Deprecated
