@@ -1,5 +1,8 @@
 package edu.brown.cs.systems.xtrace;
 
+import java.util.Collections;
+import java.util.List;
+
 import edu.brown.cs.systems.xtrace.Metadata.XTraceMetadataOrBuilder;
 import edu.brown.cs.systems.xtrace.Reporting.XTraceReport3;
 import edu.brown.cs.systems.xtrace.Reporting.XTraceReport3.Builder;
@@ -198,6 +201,16 @@ public class XTrace {
   public static Long getTaskID() {
     XTraceMetadataOrBuilder xmd = METADATA.observe();
     return xmd == null ? null : xmd.hasTaskID() ? xmd.getTaskID() : null;
+  }
+  
+  public static boolean isCausalityEnabled() {
+    XTraceMetadataOrBuilder xmd = METADATA.observe();
+    return xmd == null ? false : xmd.getParentEventIDCount() > 0;    
+  }
+  
+  public static List<Long> getParentIDs() {
+    XTraceMetadataOrBuilder xmd = METADATA.observe();
+    return xmd == null ? null : xmd.getParentEventIDList();
   }
 
   /**
