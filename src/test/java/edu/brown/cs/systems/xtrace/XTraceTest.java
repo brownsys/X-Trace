@@ -172,7 +172,7 @@ public class XTraceTest extends TestCase {
   
   private void tenantclass(boolean exists) {
     assertTrue(XTrace.hasTenantClass()==exists);
-    assertTrue((XTrace.getTenantClass()!=null)==exists);
+    assertTrue((XTrace.getTenantClass()!=-1)==exists);
   }
   
   private void parents(boolean exists) {
