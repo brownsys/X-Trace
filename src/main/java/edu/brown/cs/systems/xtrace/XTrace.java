@@ -202,11 +202,11 @@ public class XTrace {
 
   /**
    * @return the tenant class currently being propagated by X-Trace in this
-   *         thread, or null if none being propagated
+   *         thread, or -1 if none being propagated
    */
-  public static Integer getTenantClass() {
+  public static int getTenantClass() {
     XTraceMetadataOrBuilder xmd = METADATA.observe();
-    return xmd == null ? null : xmd.hasTenantClass() ? xmd.getTenantClass() : null;
+    return xmd == null ? -1 : xmd.hasTenantClass() ? xmd.getTenantClass() : -1;
   }
   
   /**
