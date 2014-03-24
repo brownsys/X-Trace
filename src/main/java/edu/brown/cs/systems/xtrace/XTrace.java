@@ -28,6 +28,8 @@ public class XTrace {
     public boolean valid();
     /** Creates and sends a report */
     public void log(String message, Object... labels);
+    /** Creates and sends a report, adding the provided strings as tags */
+    public void tag(String message, String... tags);
     /** Decorates then sends the provided report */
     public void log(Builder report);
     /** Decorates then sends the provided report which came from an out-of-band source,
@@ -45,6 +47,8 @@ public class XTrace {
     public void log(Builder report) {
     }
     public void logOOB(Builder report) {
+    }
+    public void tag(String message, String... tags) {
     }
   };
   
@@ -64,6 +68,9 @@ public class XTrace {
     }
     public void logOOB(XTraceReport3.Builder report) {
       REPORTER.reportNoXTrace(agent, report);
+    }
+    public void tag(String message, String... tags) {
+      REPORTER.reportTagged(agent, message, tags);
     }
   }
   

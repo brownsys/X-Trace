@@ -3,6 +3,7 @@ package edu.brown.cs.systems.xtrace;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 
@@ -82,11 +83,11 @@ public abstract class Reporter {
   public static Builder createReport(String label, Object... fields) {
     Builder builder = createReport();
     builder.setLabel(label);
-    for (int i = 0; i < fields.length-1; i+=2) {
+    for (int i = 0; i < fields.length - 1; i += 2) {
       // Key cannot be null, but value can
-      if (fields[i]!=null) {
+      if (fields[i] != null) {
         builder.addKey(fields[i].toString());
-        builder.addValue(fields[i+1]==null ? "null" : fields[i+1].toString());
+        builder.addValue(fields[i + 1] == null ? "null" : fields[i + 1].toString());
       }
     }
     return builder;
@@ -146,13 +147,32 @@ public abstract class Reporter {
   }
 
   /**
+   * Sends an X-Trace report. This method call will do nothing if the current
+   * X-Trace metadata is invalid
+   * 
+   * @param agent
+   *          An agent to log this report against
+   * @param label
+   *          The message of the report
+   * @param tags
+   *          Strings to tag this report with, that will be used as database
+   *          keywords
+   */
+  public void reportTagged(String agent, String label, String... tags) {
+    if (!valid())
+      return;
+
+    sendReport(agent, createReport(label).addAllTags(Arrays.asList(tags)), true);
+  }
+
+  /**
    * Called before a report is about to be sent. The last opportunity to add
    * fields to the report. Here is where we add the XTrace metadata if desired
    */
   protected void sendReport(String agent, Builder builder, boolean includeXTrace) {
     // Set the agent
     builder.setAgent(agent);
-    
+
     // Apply the user-defined decorator
     if (decorator != null)
       decorator.decorate(builder);
