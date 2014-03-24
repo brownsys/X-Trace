@@ -1,6 +1,5 @@
 package edu.brown.cs.systems.xtrace;
 
-import java.util.Collections;
 import java.util.List;
 
 import edu.brown.cs.systems.xtrace.Metadata.XTraceMetadataOrBuilder;

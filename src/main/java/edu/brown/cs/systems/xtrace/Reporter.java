@@ -47,10 +47,10 @@ public abstract class Reporter {
     this.xtrace = trace;
   }
 
-  protected Decorator decorator = null;
+  protected static Decorator decorator = null;
 
-  public void setDecorator(Decorator decorator) {
-    this.decorator = decorator;
+  public static void setDecorator(Decorator decorator) {
+    Reporter.decorator = decorator;
   }
 
   /**
