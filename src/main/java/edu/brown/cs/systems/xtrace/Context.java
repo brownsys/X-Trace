@@ -1,28 +1,32 @@
 package edu.brown.cs.systems.xtrace;
 
+import org.apache.commons.codec.binary.Base64;
+
 import edu.brown.cs.systems.xtrace.Metadata.XTraceMetadata;
 import edu.brown.cs.systems.xtrace.Metadata.XTraceMetadata.Builder;
 import edu.brown.cs.systems.xtrace.Metadata.XTraceMetadataOrBuilder;
 
 /**
- * The Context class holds information about an X-Trace task, prior events in an execution,
- * and information about the originator of the task.
+ * The Context class holds information about an X-Trace task, prior events in an
+ * execution, and information about the originator of the task.
  * 
- * The main purpose of the Context class is to be saved and restored in an instrumented application.
- * Contexts can be serialized and deserialized, created, set, and unset via static methods in the
- * XTrace class.
+ * The main purpose of the Context class is to be saved and restored in an
+ * instrumented application. Contexts can be serialized and deserialized,
+ * created, set, and unset via static methods in the XTrace class.
  * 
- * Modification of the data contained in a Context is possible via a few privileged API methods,
- * but is otherwise extremely restricted
+ * Modification of the data contained in a Context is possible via a few
+ * privileged API methods, but is otherwise extremely restricted
  * 
  * @author Jonathan Mace
- *
+ * 
  */
 public class Context {
-  
+
   /**
-   * A context can only be modified via a Manager.  This disallows arbitrary access to
-   * the data of the context, and forces all modifications to be routed through modify()
+   * A context can only be modified via a Manager. This disallows arbitrary
+   * access to the data of the context, and forces all modifications to be
+   * routed through modify()
+   * 
    * @author Jonathan Mace
    */
   static class Manager {
@@ -32,62 +36,84 @@ public class Context {
 
     /** Returns true if a context is currently active for this thread */
     public boolean exists() {
-      return context.get()!=null;
+      return context.get() != null;
     }
-    
+
     /** Sets the thread's current context to the one provided */
     public void set(Context ctx) {
       context.set(ctx);
     }
 
-    /** Sets the thread's current context to one parsed from the bytes provided.
-     * If the bytes are null or invalid, the context will be cleared */
+    /**
+     * Sets the thread's current context to one parsed from the bytes provided.
+     * If the bytes are null or invalid, the context will be cleared
+     */
     public void set(byte[] bytes) {
       context.set(Context.parse(bytes));
     }
-    
+
     /** Returns the thread's context or null if none is set */
     public Context get() {
       Context ctx = context.get();
-      if (ctx!=null)
+      if (ctx != null)
         ctx.modifiable = false;
       return ctx;
     }
-    
-    /** Returns the builder for the thread's context such that it can be modified
-     * If there is not currently a context, a new one will be created */
+
+    /**
+     * Returns the builder for the thread's context such that it can be modified
+     * If there is not currently a context, a new one will be created
+     */
     public XTraceMetadata.Builder modify() {
       Context ctx = context.get();
-      if (ctx==null)
+      if (ctx == null)
         context.set(ctx = new Context(XTraceMetadata.newBuilder()));
       else if (!ctx.modifiable)
         context.set(ctx = new Context(ctx.builder.clone()));
       return ctx.builder;
     }
-    
+
     /** Returns a readonly view on the thread's context or null if none is set */
     public XTraceMetadataOrBuilder observe() {
       Context ctx = context.get();
-      return ctx==null ? null : ctx.observe();
+      return ctx == null ? null : ctx.observe();
     }
-    
-    /** Returns the byte representation of this context */
+
+    /**
+     * Returns the byte representation of this context, or null if no valid
+     * context
+     */
     public byte[] bytes() {
       Context ctx = context.get();
-      return ctx==null ? null : ctx.bytes();
+      return ctx == null ? null : ctx.bytes();
     }
-    
+
+    /**
+     * Returns the base64 encoding of the byte representation of this context,
+     * or null if no valid context
+     */
+    public String base64() {
+      Context ctx = context.get();
+      return ctx == null ? null : ctx.base64();
+    }
   }
-  
+
   /**
-   * Returns the serialized representation of this X-Trace context.
-   * Can be deserialized with the method XTrace.parse
-   * @return the byte representation of this Context
+   * @return the serialized byte representation of this X-Trace context. Can be
+   *         deserialized with the method XTrace.parse
    */
   public byte[] bytes() {
     return builder.build().toByteArray();
   }
-  
+
+  /**
+   * @return the byte representation of this context, encoded into a base64
+   *         string
+   */
+  public String base64() {
+    return Base64.encodeBase64String(bytes());
+  }
+
   /** Returns a readonly view on the context */
   XTraceMetadataOrBuilder observe() {
     return builder;
@@ -95,7 +121,7 @@ public class Context {
 
   /** Used by the manager to keep track of accesses to the Context */
   private volatile boolean modifiable = true;
-  
+
   /** The actual protobuf containing the context */
   private final Builder builder;
 
@@ -103,20 +129,24 @@ public class Context {
   private Context(Builder builder) {
     this.builder = builder;
   }
-  
+
   /** Create a new empty Context */
   public Context() {
     this(XTraceMetadata.newBuilder());
   }
-  
+
   /**
    * Parse the protocol buffers bytes and put them in a new Context
-   * @param bytes protocol buffers serialized representation of the metadata, may be null
-   * @return a new context wrapping the deserialized protocol buffers representation.
-   * Returns null if the provided bytes were null or if there was an exception deserializing the bytes
+   * 
+   * @param bytes
+   *          protocol buffers serialized representation of the metadata, may be
+   *          null
+   * @return a new context wrapping the deserialized protocol buffers
+   *         representation. Returns null if the provided bytes were null or if
+   *         there was an exception deserializing the bytes
    */
   public static Context parse(byte[] bytes) {
-    if (bytes==null)
+    if (bytes == null)
       return null;
     try {
       return new Context(XTraceMetadata.newBuilder().mergeFrom(bytes));
@@ -125,5 +155,22 @@ public class Context {
     }
   }
 
+  /**
+   * Parse the string-encoded bytes and put them in a new context
+   * 
+   * @param string
+   *          the base64 encoding of the raw bytes, as returned by the string()
+   *          method (NOT the toString() method)
+   * @return a new context, or null if invalid
+   */
+  public static Context parse(String string) {
+    if (string == null)
+      return null;
+    try {
+      return parse(Base64.decodeBase64(string));
+    } catch (Exception e) {
+      return null;
+    }
+  }
 
 }

@@ -254,6 +254,29 @@ public class TraceImplTest extends TestCase {
     assertFalse(xtrace.observe().getParentEventID(0)==prevParentEventID);
   }
   
+  @Test
+  public void testStringRepr() {
+    byte[] xmd = randomTaskIDAndTenantAndParents(3);
+    Context ctx = Context.parse(xmd);
+    assertTrue(Arrays.equals(xmd, ctx.bytes()));
+    String strrep = ctx.base64();
+    assertNotNull(strrep);
+    Context ctx2 = Context.parse(strrep);
+    assertNotNull(ctx2);
+    assertTrue(ctx!=ctx2);
+    assertTrue(Arrays.equals(xmd, ctx2.bytes()));
+    assertTrue(Arrays.equals(ctx.bytes(), ctx2.bytes()));
+    assertTrue(ctx.base64().equals(ctx2.base64()));
+    
+    Trace xtrace = new Trace();
+    assertNull(xtrace.base64());
+    ctx = Context.parse((String)null);
+    assertNull(ctx);
+    ctx = Context.parse("");
+    assertFalse(ctx.observe().hasTaskID());
+    assertFalse(ctx.observe().hasTenantClass());
+    assertEquals(0, ctx.observe().getParentEventIDCount());
+  }
   
 
 }

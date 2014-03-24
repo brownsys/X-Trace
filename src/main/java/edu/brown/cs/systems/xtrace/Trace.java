@@ -4,12 +4,13 @@ import edu.brown.cs.systems.xtrace.Metadata.XTraceMetadata.Builder;
 import edu.brown.cs.systems.xtrace.Metadata.XTraceMetadataOrBuilder;
 
 /**
- * The basic Trace class.  Adds additional behaviours on top of those defined in Context.
+ * The basic Trace class. Adds additional behaviours on top of those defined in
+ * Context.
  * 
  * @author Jonathan Mace
  */
 class Trace extends Context.Manager {
-  
+
   public void join(byte[] other) {
     join(Context.parse(other));
   }
@@ -24,7 +25,7 @@ class Trace extends Context.Manager {
   }
 
   public void clear() {
-    set((Context)null);
+    set((Context) null);
   }
 
   private void mergeOtherContextIntoThis(Context other) {

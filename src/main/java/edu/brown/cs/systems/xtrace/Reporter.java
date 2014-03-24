@@ -48,10 +48,10 @@ public abstract class Reporter {
     this.xtrace = trace;
   }
 
-  protected static Decorator decorator = null;
+  protected Decorator decorator = null;
 
-  public static void setDecorator(Decorator decorator) {
-    Reporter.decorator = decorator;
+  public void setDecorator(Decorator decorator) {
+    this.decorator = decorator;
   }
 
   /**
