@@ -9,7 +9,7 @@ import edu.brown.cs.systems.xtrace.Reporter.Decorator;
  */
 public class XTraceExtensions {
 
-  public void setReportDecorator(Decorator decorator) {
+  public static void setReportDecorator(Decorator decorator) {
     XTrace.REPORTER.setDecorator(decorator);
   }
 
