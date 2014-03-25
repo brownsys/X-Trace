@@ -77,26 +77,26 @@ var PrototypeBuilder = function() {
 var XEvent = function(span, report) {
 	this.report = report;
 	this.span = span;
-	this.id = report["X-Trace"][0].substr(18);
+  this.id = report.id;
 	this.fqid = this.id;
-	this.timestamp = parseFloat(this.report["Timestamp"][0]);
+	this.timestamp = report.Timestamp
 	this.type = "event";
-	if (this.report["Operation"])
-		this.type = "operation " + this.report["Operation"][0];
+	if (report["Operation"])
+		this.type = "operation " + report.Operation;
 	this.start = this.timestamp;
 	this.end = this.timestamp;
 	this.duration = 0;
-	if (this.report["Duration"]) {
-		this.duration = Number(this.report["Duration"][0]) / 1000000.0;
+	if (report["Duration"]) {
+		this.duration = Number(report["Duration"]) / 1000000.0;
 		this.start = this.timestamp - this.duration;
 		this.end = this.timestamp;
 	}
-	if (this.report["Operation"] && this.report["Operation"][0].substr(0, 4)=="file" && this.report["Class"][0].indexOf("ScheduledFileIO")!=-1) {
+	if (report["Operation"] && report.Operation.substr(0, 4)=="file" && report.Agent.indexOf("ScheduledFileIO")!=-1) {
 	  var keys = ["PreWait", "PreDuration", "IOWait", "IODuration", "PostWait", "PostDuration"];
 	  this.duration = 0;
 	  for (var i = 0; i < keys.length; i++) {
 	    if (this.report[keys[i]])
-	      this.duration += Number(this.report[keys[i]][0]);
+	      this.duration += Number(this.report[keys[i]]);
 	  }
 	  this.duration = this.duration / 1000000.0;
 	  this.start = this.timestamp - this.duration;
@@ -104,13 +104,12 @@ var XEvent = function(span, report) {
 	}
 
 	this.span.thread.process.machine.task.reports_by_id[this.id] = this;
-	
 };
 XEvent.prototype.Edges = function() {
   if (this.edges==null) {
     this.edges = [];
-    var parents = this.report["Edge"];
-    for (var i = 0; i < parents.length; i++) {
+    var parents = this.report.ParentEventID;
+    for (var i = 0; parents!=null && i < parents.length; i++) {
       var edge = {
           id: this.id+parents[i],
           parent: this.span.thread.process.machine.task.reports_by_id[parents[i]],
@@ -133,7 +132,7 @@ var XSpan = function(thread, id, reports) {
 	this.events = [];
 	this.waiting = false; // is this a span where a thread is waiting?
 	for (var i = 0; i < reports.length; i++) {
-		if (reports[i]["Operation"] && reports[i]["Operation"][0].substring(0, 4)=="file") {
+		if (reports[i].Operation && reports[i].Operation.substring(0, 4)=="file") {
 			this.events.push(new XEvent(this, reports[i]));
 		} else {
 			this.events.push(new XEvent(this, reports[i]));
@@ -142,15 +141,15 @@ var XSpan = function(thread, id, reports) {
 	this.events.sort(function(a, b) { return a.timestamp - b.timestamp; });
 	this.start = this.events[0].Timestamp();
 	this.end = this.events[this.events.length-1].Timestamp();
-  this.hddevents = this.Events().filter(function(event) { return event.report["Operation"] && event.report["Operation"][0].substring(0, 4)=="file"; });
-  this.networkevents = this.Events().filter(function(event) { return event.report["Operation"] && event.report["Operation"][0].substring(0, 3)=="net"; }); 
+  this.hddevents = this.Events().filter(function(event) { return event.report.Operation && event.report.Operation.substring(0, 4)=="file"; });
+  this.networkevents = this.Events().filter(function(event) { return event.report.Operation && event.report.Operation.substring(0, 3)=="net"; }); 
 };
 PrototypeBuilder().getter("Events").accessors(["HDDEvents","NetworkEvents"]).mappers(["Edges"])(XSpan);
 
 
 
 var XThread = function(process, id, reports) {
-	reports.sort(function(a, b) { return parseFloat(a["Timestamp"][0]) - parseFloat(b["Timestamp"][0]); });
+	reports.sort(function(a, b) { return a.Timestamp - b.Timestamp; });
 	this.process = process;
   this.id = this.process.id + "_Thread-"+ id;
   this.fqid = this.process.fqid + "_Thread-"+ id;
@@ -158,13 +157,14 @@ var XThread = function(process, id, reports) {
 	this.spans = [];
 	var span = [];
 	for (var i = 0; i < reports.length; i++) {
-		if (reports[i]["Operation"] && reports[i]["Operation"][0]=="waited") {
+		if (reports[i].Operation && reports[i].Operation=="waited") {
 			/* Special case: a 'wait' report.  A 'wait' report translates into two events; a start and end.
 			 * A 'wait' report is generated at the end of the wait, and contains a field specifying the duration
 			 * of the wait.  So we must manually reconstruct the begin event of the wait */
 
 			// The duration of the wait event
-			var duration = Number(reports[i]["Duration"][0]) / 1000000.0;
+			var duration = Number(reports[i].Duration) / 1000000.0;
+			console.log(duration);
 
 			// Add an event to the end of the prior span and modify the timestamp
 			span.push(reports[i]);
@@ -185,7 +185,7 @@ var XThread = function(process, id, reports) {
 
 			// Create the start of the next span;
 			span = [reports[i]];
-		} else if (reports[i]["Operation"] && reports[i]["Operation"][0]=="unset") {
+		} else if (reports[i].Operation && reports[i].Operation=="unset") {
 			span.push(reports[i]);
 			this.spans.push(new XSpan(this, this.spans.length, span));
 			span = [];
@@ -203,8 +203,8 @@ var XThread = function(process, id, reports) {
   names[this.shortname] = true;
   var events = this.Events();
   for (var i = 0; i < events.length; i++) {
-    if (events[i].report["ThreadName"])
-      names[events[i].report["ThreadName"][0]] = true;
+    if (events[i].report.ThreadName)
+      names[events[i].report.ThreadName] = true;
   }
   delete names[this.shortname];
   var othernames = Object.keys(names);
@@ -233,17 +233,17 @@ var XProcess = function(machine, id, reports) {
 		var totalHRT = 0.0;
 		var count = 0.0;
 		for (var i = 0; i < reports.length; i++) {
-			totalTS += Number(reports[i]["Timestamp"][0]);
-			totalHRT += Number(reports[i]["HRT"][0]);
+			totalTS += Number(reports[i].Timestamp);
+			totalHRT += Number(reports[i].HRT);
 			count += 1.0;
 		}
 
 		var avgHRT = totalHRT / count;
 		var avgTS = totalTS / count;
 		for (var i = 0; i < reports.length; i++) {
-			var reportHRT = Number(reports[i]["HRT"][0]);
+			var reportHRT = Number(reports[i].HRT);
 			var reportTS = avgTS + (reportHRT - avgHRT) / 1000000.0;
-			reports[i]["Timestamp"][0] = ""+reportTS;
+			reports[i].Timestamp = reportTS;
 		}
 	}
 
@@ -295,8 +295,11 @@ var XTask = function(data) {
 
   for (var i = 0; i < this.reports.length; i++) {
     var report = this.reports[i];
-    var reportid = report["X-Trace"][0].substr(18);
-    this.reports_by_id[reportid] = report;
+    if (report.EventID==null)
+      report.id = ""+(Math.floor(Math.random() * (9999999 - 1000000 + 1)) + 1000000);
+    else
+      report.id = report.EventID;
+    this.reports_by_id[report.id] = report;
   }
 
   // Create the data structures
@@ -320,6 +323,7 @@ PrototypeBuilder().getter("Machines").accessors(["Tags"]).mappers(["Processes", 
 
 
 var Workload = function(data, gcdata) {
+  window.workload = this;
   this.data = [];
   this.gcdata = gcdata;
   this.id = unique_id();
@@ -355,13 +359,13 @@ PrototypeBuilder().getter("Tasks").mappers(["Machines", "Processes", "Threads", 
 var GCEvent = function(process, report) {
   this.report = report;
   this.process = process;
-  this.xtraceid = report["X-Trace"][0].substr(18);
+  this.xtraceid = report.id;
   this.id = this.process.fqid + "_GC-" + this.xtraceid;
   this.fqid = this.id;
 
-  this.start = Number(this.report["GcStart"][0])+1;
-  this.duration = Number(this.report["GcDuration"][0])-1;
+  this.start = Number(this.report["GcStart"])+1;
+  this.duration = Number(this.report["GcDuration"])-1;
   this.end = this.start + this.duration;
-  this.name = this.report["GcName"][0];
+  this.name = this.report["GcName"];
 };
 PrototypeBuilder().accessors(["Start", "Duration", "Name"])(GCEvent);

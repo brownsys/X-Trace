@@ -187,8 +187,8 @@ function getGCReports(ids, callback, errback) {
 			var reports = data[i].reports;
 			for (var j = 0; j < reports.length; j++) {
 				var report = reports[j];
-				if (report["Operation"] && report["Operation"][0]=="GC") {
-					var processID = report["ProcessID"][0];
+				if (report["Operation"] && report["Operation"]=="GC") {
+					var processID = report["ProcessID"];
 					if (!GCReportsByProcess[processID])
 						GCReportsByProcess[processID] = [report];
 					else
@@ -269,10 +269,11 @@ var createGraphFromReports = function(reports, params) {
     var nodes = {};
     for (var i = 0; i < reports.length; i++) {
         var report = reports[i];
-        if (!report.hasOwnProperty("X-Trace")) {
+        if (!report.hasOwnProperty("EventID")) {
             console.error("Bad report found with no ID:", report);
+            continue;
         }
-        var id = report["X-Trace"][0].substr(18);
+        var id = report.EventID;
         nodes[id] = new Node(id);
         nodes[id].report = report;
     }
@@ -281,7 +282,7 @@ var createGraphFromReports = function(reports, params) {
     console.info("Linking graph nodes");
     for (var nodeid in nodes) {
         var node = nodes[nodeid];
-        node.report["Edge"].forEach(function(parentid) {
+        node.report["ParentEventID"].forEach(function(parentid) {
             if (nodes[parentid]) {
                 nodes[parentid].addChild(node);
                 node.addParent(nodes[parentid]);
@@ -333,9 +334,9 @@ String.prototype.hashCode = function(){
 
 function hash_report(report) {
  hash = 0;
- if (report["Agent"]) hash += ("Agent:"+report["Agent"][0]).hashCode();
- if (report["Label"]) hash += ("Label:"+report["Label"][0]).hashCode();
- if (report["Class"]) hash += ("Class:"+report["Class"][0]).hashCode();
+ if (report["Agent"]) hash += ("Agent:"+report["Agent"]).hashCode();
+ if (report["Label"]) hash += ("Label:"+report["Label"]).hashCode();
+ if (report["Class"]) hash += ("Class:"+report["Class"]).hashCode();
  return hash & hash;
 }
 
@@ -344,14 +345,14 @@ var filter_yarnchild_reports = function(reports) {
     var yarnchild_process_ids = {};
     for (var i = 0; i < reports.length; i++) {
         var report = reports[i];
-        if (report.hasOwnProperty("Agent") && (report["Agent"][0]=="YarnChild" || report["Agent"][0]=="Hadoop Job")) {
-            yarnchild_process_ids[report["ProcessID"][0]] = true;
+        if (report.hasOwnProperty("Agent") && (report["Agent"]=="YarnChild" || report["Agent"]=="Hadoop Job")) {
+            yarnchild_process_ids[report["ProcessID"]] = true;
         }
     }
     
     // A function to decide whether a report stays or goes
     var filter = function(report) {
-        return yarnchild_process_ids[report["ProcessID"][0]] ? false : true;
+        return yarnchild_process_ids[report["ProcessID"]] ? false : true;
     }
     
     return filter_reports(reports, filter);
@@ -359,7 +360,7 @@ var filter_yarnchild_reports = function(reports) {
 
 var filter_merge_reports = function(reports) {
     var filter = function(report) {
-        return report["Operation"] && report["Operation"][0]=="merge";
+        return report["Operation"] && report["Operation"]=="merge";
     }
     
     return filter_reports(reports, filter);
@@ -367,7 +368,7 @@ var filter_merge_reports = function(reports) {
 
 var filter_agent_reports = function(reports, agent) {
     var filter = function(report) {
-        return report["Agent"] && report["Agent"][0]==agent;
+        return report["Agent"] && report["Agent"]==agent;
     };
     
     return filter_reports(reports, filter);
@@ -381,7 +382,7 @@ var filter_reports = function(reports, f) {
     var reportmap = {};
     for (var i = 0; i < reports.length; i++) {
         var report = reports[i];
-        var id = report["X-Trace"][0].substr(18);
+        var id = report.EventID;
         reportmap[id] = report;
         if (f(report)) {
             removed[id]=report;
@@ -432,7 +433,7 @@ var yarnchild_kernelgraph_for_trace = function(trace) {
 }
 
 var report_id = function(report) {
-	return report["X-Trace"][0].substr(18);
+	return report.EventID;
 }
 
 // generates numeric ids starting from 0, never reuses same number
@@ -463,7 +464,7 @@ function group_reports_by_field(reports, field) {
   var grouping = {};
   for (var i = 0; i < reports.length; i++) {
     try {
-      var value = reports[i][field][0];
+      var value = reports[i][field];
       if (!(value in grouping))
         grouping[value] = [];
       grouping[value].push(reports[i]);

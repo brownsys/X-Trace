@@ -67,6 +67,8 @@ public class Report3 implements Report {
     
     if (event.hasTaskID())
       json.put("taskID", this.taskID);
+    if (event.hasTimestamp())
+      json.put("Timestamp", event.getTimestamp());
     if (event.hasHRT())
       json.put("HRT", event.getHRT());
     if (event.hasCycles())
