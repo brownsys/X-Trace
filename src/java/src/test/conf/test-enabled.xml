@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-
-<!--  An X-Trace config for testing config parsing and loading -->
-
-<Configuration>
-    <XTrace>Enabled</XTrace>
-</Configuration>

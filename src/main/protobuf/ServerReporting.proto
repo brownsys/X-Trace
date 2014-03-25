@@ -1,0 +1,12 @@
+package pubsub;
+
+import "src/main/protobuf/Reporting.proto";
+
+option java_package = "edu.brown.cs.systems.xtrace.server.impl";
+option java_outer_classname = "ServerReporting";
+
+// A container for serializing reports to disk
+message ReportOnDisk {
+	optional XTraceReport2 v2report = 1;
+	optional XTraceReport3 v3report = 2;
+}

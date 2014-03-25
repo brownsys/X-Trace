@@ -1,3 +1,7 @@
-src/data
-src/java/target
-src/java/.classpath
+.classpath
+.settings
+.project
+bin
+target
+xtrace-data
+application.conf

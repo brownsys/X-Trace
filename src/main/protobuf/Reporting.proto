@@ -1,0 +1,49 @@
+package pubsub;
+
+option java_package = "edu.brown.cs.systems.xtrace";
+option java_outer_classname = "Reporting";
+
+// The report specification for X-Trace version 3.  Preferred
+message XTraceReport3 {
+	// X-Trace Task ID (left as optional, but for now we consider it required)
+	optional sfixed64 taskID = 1;
+	
+	// Timestamp fields
+	optional int64 timestamp = 2; // Epoch time in milliseconds
+	optional int64 HRT = 3; // Process-dependent high-resolution timer in nanoseconds
+	optional int64 cycles = 4; // Thread-dependent CPU cycle timer
+	
+	// Report source fields
+	optional string host = 5; // Hostname
+	optional int32 processID = 6; // Numeric process ID
+	optional string processName = 7; // Process name
+	optional int32 threadID = 8; // Numeric thread ID
+	optional string threadName = 9; // Thread name
+	optional string agent = 10; // An arbitrary string, usually a java class, where this report was generated
+	optional string source = 11; // The source code location where this report was generated
+	
+	// Messages
+	optional string label = 12; // String text message
+	repeated string key = 13; // keys for custom fields; only add a key if you will also add a value
+	repeated string value = 14; // keys for custom values; only add a value if you also added a key
+	repeated string tags = 16; // Database tags
+	optional string title = 17; // Trace title; rarely appears so higher proto number
+	
+	// X-Trace Tenant field
+	optional int32 tenantClass = 15;
+	
+	// X-Trace Causality fields
+	optional sfixed64 eventID = 18;
+	repeated sfixed64 parentEventID = 19;
+	
+	// Resource Tracing and other fields
+	optional string op = 20;
+}
+
+// A container for the string representation of X-Trace version 2 reports.  Deprecated
+message XTraceReport2 {
+	required string taskid = 1;
+	required string report = 2;
+	optional string title = 3;
+	repeated string tag = 4;
+}

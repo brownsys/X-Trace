@@ -1,0 +1,14 @@
+package pubsub;
+
+option java_package = "edu.brown.cs.systems.xtrace";
+
+message XTraceMetadata {
+	optional sfixed64 taskID = 1;
+	
+	/* We allow multiple parent event IDs, because this is a very legitimate circumstance to encounter.
+	*  However, we strongly encourage merging parent events via generation of an intermediate event before
+	*  doing any kind of serialization, to bound the size of the serialized metadata
+	*/
+	repeated sfixed64 parentEventID = 2;
+	optional int32 tenantClass = 3;
+}
