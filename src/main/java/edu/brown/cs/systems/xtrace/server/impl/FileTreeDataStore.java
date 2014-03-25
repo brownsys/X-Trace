@@ -74,7 +74,7 @@ public class FileTreeDataStore implements DataStore {
       
       // Create the task file and a writer to it
       File taskfile = new File(l3, taskId + ".txt");
-      return new BufferedOutputStream(new FileOutputStream(taskfile), XTraceSettings.DATASTORE_BUFFER_SIZE);
+      return new BufferedOutputStream(new FileOutputStream(taskfile, true), XTraceSettings.DATASTORE_BUFFER_SIZE);
     }
   }
 
