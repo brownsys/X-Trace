@@ -210,7 +210,7 @@ public abstract class Reporter {
 
   protected abstract void close();
 
-  private static class Utils {
+  public static class Utils {
 
     private static Class<?> MainClass;
     private static String ProcessName;
