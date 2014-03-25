@@ -2,6 +2,7 @@ package edu.brown.cs.systems.xtrace.server.impl;
 
 import java.util.List;
 
+import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import edu.brown.cs.systems.xtrace.Reporting.XTraceReport3;
 import edu.brown.cs.systems.xtrace.server.api.Report;
@@ -62,12 +63,55 @@ public class Report3 implements Report {
 
   @Override
   public JSONObject jsonRepr() {
-    JSONObject jsonObj = new JSONObject();
-    jsonObj.put("version", HEADER);
+    JSONObject json = new JSONObject();
     
-    // TODO
-    throw new UnsupportedOperationException();
+    if (event.hasTaskID())
+      json.put("taskID", this.taskID);
+    if (event.hasHRT())
+      json.put("HRT", event.getHRT());
+    if (event.hasCycles())
+      json.put("Cycles", event.getCycles());
+    if (event.hasHost())
+      json.put("Host", event.getHost());
+    if (event.hasProcessID())
+      json.put("ProcessID", event.getProcessID());
+    if (event.hasProcessName())
+      json.put("ProcessName", event.getProcessName());
+    if (event.hasThreadID())
+      json.put("ThreadID", event.getThreadID());
+    if (event.hasThreadName())
+      json.put("ThreadName", event.getThreadName());
+    if (event.hasAgent())
+      json.put("Agent", event.getAgent());
+    if (event.hasSource())
+      json.put("Source", event.getSource());
+    if (event.hasLabel())
+      json.put("Label", event.getLabel());
+    for (int i = 0; i < event.getKeyCount(); i++) {
+      json.put(event.getKey(i), event.getValue(i));
+    }
+    if (event.getTagsCount()>0) {
+      JSONArray tags = new JSONArray();
+      tags.addAll(event.getTagsList());
+      json.put("Tag", tags);
+    }
+    if (event.hasTitle())
+      json.put("Title", event.getTitle());
+    if (event.hasTenantClass())
+      json.put("TenantClass", event.getTenantClass());
+    if (event.hasEventID())
+      json.put("EventID", Long.toString(event.getEventID()));
+    if (event.getParentEventIDCount() > 0) {
+      JSONArray parents = new JSONArray();
+      for (int i = 0; i < event.getParentEventIDCount(); i++) {
+        parents.add(Long.toString(event.getParentEventID(i)));
+      }
+      json.put("ParentEventID", parents);
+    }
+    if (event.hasOp())
+      json.put("Operation", event.getOp());
 
+    return json;
   }
   
 }
