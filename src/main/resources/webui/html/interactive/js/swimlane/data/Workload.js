@@ -164,7 +164,6 @@ var XThread = function(process, id, reports) {
 
 			// The duration of the wait event
 			var duration = Number(reports[i].Duration) / 1000000.0;
-			console.log(duration);
 
 			// Add an event to the end of the prior span and modify the timestamp
 			span.push(reports[i]);
@@ -359,6 +358,10 @@ PrototypeBuilder().getter("Tasks").mappers(["Machines", "Processes", "Threads", 
 var GCEvent = function(process, report) {
   this.report = report;
   this.process = process;
+  if (report.EventID==null)
+    report.id = ""+(Math.floor(Math.random() * (9999999 - 1000000 + 1)) + 1000000);
+  else
+    report.id = report.EventID;
   this.xtraceid = report.id;
   this.id = this.process.fqid + "_GC-" + this.xtraceid;
   this.fqid = this.id;

@@ -100,9 +100,9 @@ function SwimLane() {
       main.select(".network").attr("clip-path", "url(#clip)");
 			main.select(".events").attr("clip-path", "url(#clip)");
 
-			// Add a mouse marker if drawing for the first time
-			newmain.select(".timeindicator line").attr('y1', 0).attr('y2', height);
-			newmain.on("mousemove", function(e) {
+			// Add a mouse marker
+			main.select(".timeindicator line").attr('y1', 0).attr('y2', height);
+			main.on("mousemove", function(e) {
 				var mousex = d3.mouse(this)[0]-margin;
 				d3.select(this).select(".timeindicator line").attr('x1', mousex).attr('x2', mousex);				
 			});
