@@ -252,11 +252,15 @@ public class DerbyMetadataStore implements MetadataStore {
         }
         updatedSince.setString(1, (new Timestamp(milliSecondsSince1970)).toString());
         ResultSet rs = updatedSince.executeQuery();
-        int i = 0;
-        while (rs.next()) {
-          if (i >= offset && i < offset + limit)
-            lst.add(readTaskRecord(rs));
-          i++;
+        try {
+          int i = 0;
+          while (rs.next()) {
+            if (i >= offset && i < offset + limit)
+              lst.add(readTaskRecord(rs));
+            i++;
+          }
+        } finally {
+          rs.close();
         }
       } catch (SQLException e) {
         LOG.warn("Internal SQL error", e);
@@ -270,8 +274,12 @@ public class DerbyMetadataStore implements MetadataStore {
         getTags.setString(1, taskId);
         getTags.execute();
         ResultSet rs = getTags.getResultSet();
-        if (rs.next())
-          return Arrays.asList(rs.getString("tags").split(","));
+        try {
+          if (rs.next())
+            return Arrays.asList(rs.getString("tags").split(","));
+        } finally {
+          rs.close();
+        }
       } catch (SQLException e) {
         LOG.warn("Unable to get tags for task " + taskId, e);
       }
@@ -288,14 +296,17 @@ public class DerbyMetadataStore implements MetadataStore {
           lastTasks.setMaxRows(offset + limit + 1);
         }
         ResultSet rs = lastTasks.executeQuery();
-        int i = 0;
-        while (rs.next() && numToFetch > 0) {
-          if (i >= offset && i < offset + limit)
-            lst.add(readTaskRecord(rs));
-          numToFetch -= 1;
-          i++;
+        try {
+          int i = 0;
+          while (rs.next() && numToFetch > 0) {
+            if (i >= offset && i < offset + limit)
+              lst.add(readTaskRecord(rs));
+            numToFetch -= 1;
+            i++;
+          }
+        } finally {
+          rs.close();
         }
-        rs.close();
       } catch (SQLException e) {
         LOG.warn("Internal SQL error", e);
       }
@@ -312,17 +323,20 @@ public class DerbyMetadataStore implements MetadataStore {
         }
         getByTag.setString(1, tag);
         ResultSet rs = getByTag.executeQuery();
-        int i = 0;
-        while (rs.next()) {
-          TaskRecord rec = readTaskRecord(rs);
-          if (rec.getTags().contains(tag)) { // Make sure the SQL "LIKE"
-            // match is exact
-            if (i >= offset && i < offset + limit)
-              lst.add(rec);
+        try {
+          int i = 0;
+          while (rs.next()) {
+            TaskRecord rec = readTaskRecord(rs);
+            if (rec.getTags().contains(tag)) { // Make sure the SQL "LIKE"
+              // match is exact
+              if (i >= offset && i < offset + limit)
+                lst.add(rec);
+            }
+            i++;
           }
-          i++;
+        } finally {
+          rs.close();
         }
-        rs.close();
       } catch (SQLException e) {
         LOG.warn("SQLException in getTasksByTag", e);
       }
@@ -337,20 +351,28 @@ public class DerbyMetadataStore implements MetadataStore {
         // Fetch the timestamps for this task
         timesByTask.setString(1, taskId.toString());
         timesByTask.execute();
-        ResultSet rs = timesByTask.getResultSet();
-        if (rs.next()) {
-          // Update the search bounds if necessary
-          long firstSeen = rs.getTimestamp("firstseen").getTime();
-          long lastUpdated = rs.getTimestamp("lastUpdated").getTime();
-
-          // Now search for all taskids between these bounds
-          tasksBetween.setString(1, new Timestamp(lastUpdated).toString());
-          tasksBetween.setString(2, new Timestamp(firstSeen).toString());
-          tasksBetween.execute();
-          rs = tasksBetween.getResultSet();
-          while (rs.next()) {
-            overlaps.add(rs.getString("taskid"));
+        ResultSet rs1 = timesByTask.getResultSet();
+        try {
+          if (rs1.next()) {
+            // Update the search bounds if necessary
+            long firstSeen = rs1.getTimestamp("firstseen").getTime();
+            long lastUpdated = rs1.getTimestamp("lastUpdated").getTime();
+  
+            // Now search for all taskids between these bounds
+            tasksBetween.setString(1, new Timestamp(lastUpdated).toString());
+            tasksBetween.setString(2, new Timestamp(firstSeen).toString());
+            tasksBetween.execute();
+            ResultSet rs2 = tasksBetween.getResultSet();
+            try {
+              while (rs2.next()) {
+                overlaps.add(rs2.getString("taskid"));
+              }
+            } finally {
+              rs2.close();
+            }
           }
+        } finally {
+          rs1.close();
         }
       } catch (SQLException e) {
         LOG.warn("SQLException in getOverlappingTasks " + taskId, e);
@@ -360,7 +382,6 @@ public class DerbyMetadataStore implements MetadataStore {
     }
 
     public synchronized List<TaskRecord> getTasksByTitle(String title, int offset, int limit) {
-      List<TaskRecord> lst = new ArrayList<TaskRecord>();
       try {
         if (offset + limit + 1 < 0) {
           getByTitle.setMaxRows(Integer.MAX_VALUE);
@@ -368,15 +389,19 @@ public class DerbyMetadataStore implements MetadataStore {
           getByTitle.setMaxRows(offset + limit + 1);
         }
         getByTitle.setString(1, title);
-        lst = createRecordList(getByTitle.executeQuery(), offset, limit);
+        ResultSet rs = getByTitle.executeQuery();
+        try {
+          return createRecordList(rs, offset, limit);
+        } finally {
+          rs.close();
+        }
       } catch (SQLException e) {
         LOG.warn("SQLException in getTasksByTitle", e);
       }
-      return lst;
+      return Collections.emptyList();
     }
 
     public synchronized List<TaskRecord> getTasksByTitleSubstring(String title, int offset, int limit) {
-      List<TaskRecord> lst = new ArrayList<TaskRecord>();
       try {
         if (offset + limit + 1 < 0) {
           getByTitleApprox.setMaxRows(Integer.MAX_VALUE);
@@ -384,41 +409,46 @@ public class DerbyMetadataStore implements MetadataStore {
           getByTitleApprox.setMaxRows(offset + limit + 1);
         }
         getByTitleApprox.setString(1, title);
-        lst = createRecordList(getByTitleApprox.executeQuery(), offset, limit);
+        ResultSet rs = getByTitleApprox.executeQuery();
+        try {
+          return createRecordList(rs, offset, limit);
+        } finally {
+          rs.close();
+        }
       } catch (SQLException e) {
         LOG.warn("Internal SQL error", e);
       }
-      return lst;
+      return Collections.emptyList();
     }
 
     public synchronized int numReports() {
-      int total = 0;
-
       try {
         ResultSet rs = totalNumReports.executeQuery();
-        rs.next();
-        total = rs.getInt("totalreports");
-        rs.close();
+        try {
+          rs.next();
+          return rs.getInt("totalreports");
+        } finally {
+          rs.close();
+        }
       } catch (SQLException e) {
         LOG.warn("Internal SQL error", e);
       }
-
-      return total;
+      return 0;
     }
 
     public synchronized int numTasks() {
-      int total = 0;
-
       try {
         ResultSet rs = totalNumTasks.executeQuery();
-        rs.next();
-        total = rs.getInt("numtasks");
-        rs.close();
+        try {
+          rs.next();
+          return rs.getInt("numtasks");
+        } finally {
+          rs.close();
+        }
       } catch (SQLException e) {
         LOG.warn("Internal SQL error", e);
       }
-
-      return total;
+      return 0;
     }
   }
 
@@ -555,10 +585,12 @@ public class DerbyMetadataStore implements MetadataStore {
       try {
         countTasks.setString(1, taskId);
         ResultSet rs = countTasks.executeQuery();
-        rs.next();
-        boolean exists = rs.getInt("rowcount") != 0;
-        rs.close();
-        return exists;
+        try {
+          rs.next();
+          return rs.getInt("rowcount") != 0;
+        } finally {
+          rs.close();
+        }
       } catch (Exception e) {
         return false;
       }
@@ -588,9 +620,13 @@ public class DerbyMetadataStore implements MetadataStore {
     private void addTagsToExistingTask(String taskId, Set<String> tags) throws SQLException {
       getTags.setString(1, taskId);
       ResultSet tagsRs = getTags.executeQuery();
-      tagsRs.next();
-      String oldTags = tagsRs.getString("tags");
-      tagsRs.close();
+      String oldTags = "";
+      try {
+        tagsRs.next();
+        oldTags = tagsRs.getString("tags");
+      } finally {
+        tagsRs.close();
+      }
       tags.addAll(Arrays.asList(oldTags.split(",")));
       updateTags.setString(1, joinWithCommas(tags));
       updateTags.setString(2, taskId);
