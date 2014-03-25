@@ -38,9 +38,9 @@ var DirectedAcyclicGraphTooltip = function(gravity) {
 			if (report.hasOwnProperty(key)) {
 				seen[key] = true;
 				if (key=="Timestamp") {
-					appendRow(key, timestampToTimeString(report[key][0]), tooltip);
+					appendRow(key, timestampToTimeString(report[key]), tooltip);
 				} else {
-					appendRow(key, report[key].join(", "), tooltip);
+					appendRow(key, report[key], tooltip);
 				}
 
 			}
@@ -49,7 +49,7 @@ var DirectedAcyclicGraphTooltip = function(gravity) {
 		// Do the remainder
 		for (var key in report) {
 			if (!seen[key]) {
-				appendRow(key, report[key].join(", "), tooltip);
+				appendRow(key, report[key], tooltip);
 			}
 		}
 
