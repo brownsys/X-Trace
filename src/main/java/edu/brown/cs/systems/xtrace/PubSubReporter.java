@@ -4,6 +4,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import edu.brown.cs.systems.pubsub.Publisher;
+import edu.brown.cs.systems.pubsub.Settings;
 import edu.brown.cs.systems.xtrace.Reporting.XTraceReport3.Builder;
 
 /**
@@ -24,7 +25,8 @@ class PubSubReporter extends Reporter implements Runnable {
   protected final BlockingQueue<Builder> outgoing = new LinkedBlockingQueue<Builder>();
   protected volatile boolean alive = true;
   protected final Thread worker;
-  private final Publisher publisher;
+  private String hostname = null;
+  private int port = 0;
 
   /**
    * Creates a new log implementation, using the default pubsub server hostname
@@ -34,7 +36,7 @@ class PubSubReporter extends Reporter implements Runnable {
    *          an xtrace metadata propagation
    */
   public PubSubReporter(Trace trace) {
-    this(trace, XTraceSettings.SERVER_HOSTNAME, XTraceSettings.PUBSUB_PUBLISH_PORT);
+    this(trace, null, 0);
   }
 
   /**
@@ -50,7 +52,8 @@ class PubSubReporter extends Reporter implements Runnable {
    */
   public PubSubReporter(Trace trace, String hostname, int port) {
     super(trace);
-    publisher = new Publisher(hostname, port);
+    this.hostname = hostname;
+    this.port = port;
     worker = new Thread(this);
     worker.start();
   }
@@ -74,6 +77,11 @@ class PubSubReporter extends Reporter implements Runnable {
   @Override
   public void run() {
     // Just run until we're done, interrupted, or get an exception
+    if (hostname==null)
+      hostname = Settings.SERVER_HOSTNAME;
+    if (port==0)
+      port = Settings.CLIENT_PUBLISH_PORT;
+    Publisher publisher = new Publisher(hostname, port);
     try {
       while (alive && !Thread.currentThread().isInterrupted()) {
         publisher.publish(XTraceSettings.PUBSUB_TOPIC, outgoing.take().build());
