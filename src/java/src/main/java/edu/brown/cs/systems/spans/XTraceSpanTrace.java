@@ -43,6 +43,9 @@ public class XTraceSpanTrace {
     private static String getCurrentSpanFromOptionFields() {
         XTraceMetadata xmd = getFirstCurrentXTraceMetadata();
         OptionField[] curOptions = xmd.getOptions();
+        if (curOptions == null) {
+            return null;
+        }
         for (int i = 0; i < curOptions.length; i++) {
             if (curOptions[i].getType() == TRACE_OPTION_FIELD_TYPE) {
                 return new String(curOptions[i].getPayload());
@@ -81,7 +84,10 @@ public class XTraceSpanTrace {
         event.sendReport();
         xmd = getFirstCurrentXTraceMetadata();
         String newSpanString = xmd.getOpIdString();
-        System.out.println("start SPAN set current span: " + setCurrentSpanInOptions(newSpanString) + ". new: " + newSpanString + ". OLD: " + curSpanString);
+        // System.out.println("start SPAN set current span: " +
+        // setCurrentSpanInOptions(newSpanString) + ". new: " +
+        // newSpanString + ". OLD: " + curSpanString);
+        setCurrentSpanInOptions(newSpanString);
         return new XTraceSpan(newSpanString, curSpanString);
     }
 
@@ -90,6 +96,10 @@ public class XTraceSpanTrace {
         if (!XTraceConfiguration.ENABLED) {
             // TODO: have a null xtracespan to return here?
             return null;
+        }
+
+        if (getCurrentSpanFromOptionFields() != null) {
+            return startSpan(description);
         }
 
         Class<?> msgclass = XTraceLogLevel.DEFAULT;
@@ -116,7 +126,7 @@ public class XTraceSpanTrace {
 
     // TODO: add boolean flag to throw exception if more than one
     // metadata is current for assertion checking.
-    private static XTraceMetadata getFirstCurrentXTraceMetadata() {
+    public static XTraceMetadata getFirstCurrentXTraceMetadata() {
         Collection<XTraceMetadata> xmdCol = XTraceContext.getThreadContext(null);
 
         if (xmdCol.size() != 1) {
@@ -164,21 +174,21 @@ public class XTraceSpanTrace {
                              newOptions.length - foundIndex - 1);
         }
 
-        // TODO: remove this (test)
-        System.out.println("---------------------------------------------------");
-        System.out.println("CUR OPTIONS:\n");
-        for (OptionField of : curOptions) {
-            if (of != null) {
-                System.out.println("OPTION FIELD: " + new String(of.getPayload()));
-            } else {
-                System.out.println("OPTION FIELD NULL");
-            }
-        }
-        System.out.println("NEW OPTIONS:\n");
-        for (OptionField of : newOptions) {
-            System.out.println("OPTION FIELD: " + of);
-        }
-        System.out.println("---------------------------------------------------");
+        // // TODO: remove this (test)
+        // System.out.println("---------------------------------------------------");
+        // System.out.println("CUR OPTIONS:\n");
+        // for (OptionField of : curOptions) {
+        //     if (of != null) {
+        //         System.out.println("OPTION FIELD: " + new String(of.getPayload()));
+        //     } else {
+        //         System.out.println("OPTION FIELD NULL");
+        //     }
+        // }
+        // System.out.println("NEW OPTIONS:\n");
+        // for (OptionField of : newOptions) {
+        //     System.out.println("OPTION FIELD: " + of);
+        // }
+        // System.out.println("---------------------------------------------------");
 
         xmd.setOptions(newOptions);
         return true;
@@ -186,11 +196,11 @@ public class XTraceSpanTrace {
 
     private static boolean setCurrentSpanInOptions(String opId) {
         XTraceMetadata xmd = getFirstCurrentXTraceMetadata();
-        System.out.println("size before removing: " + xmd.getNumOptions());
+        // System.out.println("size before removing: " + xmd.getNumOptions());
         boolean toReturn = removeCurrentSpanFromOptions();
-        System.out.println("size after removing and before adding new: " + xmd.getNumOptions());
+        // System.out.println("size after removing and before adding new: " + xmd.getNumOptions());
         xmd.addOption(createOptionFieldForOpId(opId));
-        System.out.println("size after adding new: " + xmd.getNumOptions());
+        // System.out.println("size after adding new: " + xmd.getNumOptions());
         return toReturn;
     }
 
@@ -199,7 +209,9 @@ public class XTraceSpanTrace {
                                NO_DESC_GIVEN,
                                END_SPAN_FIELDKEY,
                                toStop.getSpan());
-        System.out.println("stopSPAN CURRENT: " + setCurrentSpanInOptions(toStop.getSavedSpan()));
+        // System.out.println("stopSPAN CURRENT: " +
+        // setCurrentSpanInOptions(toStop.getSavedSpan()));
+        setCurrentSpanInOptions(toStop.getSavedSpan());
     }
 
     public static Runnable wrap(Runnable runnable) {
