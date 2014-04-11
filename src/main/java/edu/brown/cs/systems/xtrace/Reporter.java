@@ -42,7 +42,6 @@ public abstract class Reporter {
   protected final Trace xtrace;
   protected static final String host = Utils.getHost();
   protected static final int procid = Utils.getProcessID();
-  protected static String procname = Utils.getProcessName();
 
   Reporter(Trace trace) {
     this.xtrace = trace;
@@ -65,7 +64,7 @@ public abstract class Reporter {
     Builder builder = XTraceReport3.newBuilder();
     builder.setHost(host);
     builder.setProcessID(procid);
-    builder.setProcessName(procname);
+    builder.setProcessName(Utils.getProcessName());
     builder.setThreadID((int) Thread.currentThread().getId());
     builder.setThreadName(Thread.currentThread().getName());
     builder.setTimestamp(System.currentTimeMillis());
@@ -243,7 +242,7 @@ public abstract class Reporter {
       if (ProcessName == null) {
         Class<?> mainClass = getMainClass();
         if (mainClass == null)
-          ProcessName = "";
+          return "";
         else
           ProcessName = mainClass.getSimpleName();
       }
