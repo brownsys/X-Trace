@@ -243,7 +243,7 @@ public abstract class Reporter {
       if (ProcessName == null) {
         Class<?> mainClass = getMainClass();
         if (mainClass == null)
-          return "";
+          ProcessName = "";
         else
           ProcessName = mainClass.getSimpleName();
       }
