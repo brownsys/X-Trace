@@ -43,6 +43,10 @@ public class TraceImplTest extends TestCase {
     return newBytes(null, random.nextInt());
   }
   
+  public static byte[] empty() {
+    return newBuilder(null, null).build().toByteArray();
+  }
+  
   public static byte[] randomTaskID() {
     return newBytes(random.nextLong(), null);
   }
