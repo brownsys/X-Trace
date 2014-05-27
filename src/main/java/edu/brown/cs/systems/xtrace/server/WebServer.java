@@ -1,8 +1,11 @@
 package edu.brown.cs.systems.xtrace.server;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -18,6 +21,7 @@ import javax.servlet.http.HttpServletResponse;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
@@ -28,6 +32,7 @@ import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.log.Log;
 import org.mortbay.servlet.CGI;
 
+import edu.brown.cs.systems.utils.TempFileExtractor;
 import edu.brown.cs.systems.xtrace.XTraceSettings;
 import edu.brown.cs.systems.xtrace.server.api.DataStore;
 import edu.brown.cs.systems.xtrace.server.api.MetadataStore;
@@ -44,9 +49,17 @@ public class WebServer extends Server {
 
   private DataStore data;
   private MetadataStore metadata;
+  
+  private String webui = "";
+  
+  private void extractWebUI() throws IOException, URISyntaxException {
+    webui = TempFileExtractor.extractFolderToTemp("webui", "webui");
+  }
 
-  public WebServer(int httpport, DataStore data, MetadataStore metadata) {
+  public WebServer(int httpport, DataStore data, MetadataStore metadata) throws IOException, URISyntaxException {
     super(httpport);
+    
+    extractWebUI();
 
     this.data = data;
     this.metadata = metadata;
@@ -55,7 +68,7 @@ public class WebServer extends Server {
     try {
       Velocity.setProperty(Velocity.RUNTIME_LOG_LOGSYSTEM_CLASS, "org.apache.velocity.runtime.log.Log4JLogChute");
       Velocity.setProperty("runtime.log.logsystem.log4j.logger", "edu.berkeley.xtrace.server.XTraceServer");
-      Velocity.setProperty("file.resource.loader.path", XTraceSettings.WEBUI_SRC_DIR + "/templates");
+      Velocity.setProperty("file.resource.loader.path", webui + "/templates");
       Velocity.setProperty("file.resource.loader.cache", "true");
       Velocity.init();
     } catch (Exception e) {
@@ -67,7 +80,7 @@ public class WebServer extends Server {
 
     // Create a CGI servlet for scripts in webui/cgi-bin
     ServletHolder cgiHolder = new ServletHolder(new CGI());
-    cgiHolder.setInitParameter("cgibinResourceBase", XTraceSettings.WEBUI_SRC_DIR + "/cgi-bin");
+    cgiHolder.setInitParameter("cgibinResourceBase", webui + "/cgi-bin");
 
     // Pass any special PATH setting on to the execution environment
     if (System.getenv("PATH") != null)
@@ -89,7 +102,7 @@ public class WebServer extends Server {
     context.addServlet(new ServletHolder(new GetTagsForTaskServlet()), "/interactive/tags/*");
     context.addServlet(new ServletHolder(new GetTasksForTags()), "/interactive/taggedwith/*");
 
-    context.setResourceBase(XTraceSettings.WEBUI_SRC_DIR + "/html");
+    context.setResourceBase(webui + "/html");
     context.addServlet(new ServletHolder(new IndexServlet()), "/");
   }
 

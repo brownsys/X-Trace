@@ -14,7 +14,6 @@ public class XTraceSettings {
   public static final String SERVER_BIND_HOSTNAME = CONFIG.getString("xtrace.server.bind-hostname");
 
   public static final int WEBUI_PORT = CONFIG.getInt("xtrace.server.webui.port");
-  public static final String WEBUI_SRC_DIR = CONFIG.getString("xtrace.server.webui.dir");
 
   public static final int TCP_PORT = CONFIG.getInt("xtrace.tcp.port");
 
