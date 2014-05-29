@@ -295,6 +295,17 @@ public class XTrace {
   }
 
   /**
+   * @return the tenant class of the provided context
+   *         thread, or -1 if none being propagated
+   */
+  public static int getTenantClass(Context ctx) {
+    if (ctx==null)
+      return -1;
+    XTraceMetadataOrBuilder xmd = ctx.observe();
+    return xmd == null ? -1 : xmd.hasTenantClass() ? xmd.getTenantClass() : -1;
+  }
+
+  /**
    * @return true if the thread currently has multiple parent X-Trace event IDs,
    *         and it is therefore worth logging a message before serializing.
    */
