@@ -1,11 +1,9 @@
 package edu.brown.cs.systems.xtrace.server;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.URLDecoder;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -21,7 +19,6 @@ import javax.servlet.http.HttpServletResponse;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
@@ -33,7 +30,6 @@ import org.mortbay.log.Log;
 import org.mortbay.servlet.CGI;
 
 import edu.brown.cs.systems.utils.TempFileExtractor;
-import edu.brown.cs.systems.xtrace.XTraceSettings;
 import edu.brown.cs.systems.xtrace.server.api.DataStore;
 import edu.brown.cs.systems.xtrace.server.api.MetadataStore;
 import edu.brown.cs.systems.xtrace.server.api.Report;
