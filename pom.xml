@@ -111,6 +111,14 @@
 						</program>
 					</programs>
 				</configuration>
+				<executions>
+					<execution>
+						<id>package</id>
+						<goals>
+							<goal>assemble</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<artifactId>maven-antrun-plugin</artifactId>
