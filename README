@@ -15,7 +15,7 @@ X-Trace version 3 requires protocol buffers.  Ensure that the protoc executable 
 https://code.google.com/p/protobuf/
 
 X-Trace version 3 requires the Brown University Systems pubsub package, available from github
-https://github.com/brownsys/DistributedPubSub 
+https://github.com/brownsys/pubsub
 
 To run a clean build and install:
 mvn clean package install appassembler:assemble
